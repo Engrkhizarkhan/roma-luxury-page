@@ -4,18 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * SSAroma design system.
- * Palette: near-black #090909, cream #F1E8D8, champagne gold #B7925A, off-white #FAF7F1.
- * Gold is reserved for hairlines, small labels and hover states only.
- */
-
 @theme inline {
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 3px;
-  --radius-xl: 3px;
-  --radius-2xl: 4px;
+  --radius-sm: 0px;
+  --radius-md: 1px;
+  --radius-lg: 1px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
   --font-display: "Cormorant Garamond", "Times New Roman", serif;
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
@@ -44,12 +38,11 @@
 }
 
 :root {
-  --radius: 2px;
-  --ink: oklch(0.148 0 0);
-  --cream: oklch(0.933 0.026 88.5);
-  --offwhite: oklch(0.969 0.011 84);
-  --gold: oklch(0.674 0.076 71.5);
-
+  --radius: 1px;
+  --ink: oklch(0.135 0.008 69);
+  --cream: oklch(0.925 0.029 83);
+  --offwhite: oklch(0.97 0.012 82);
+  --gold: oklch(0.652 0.071 71);
   --background: var(--offwhite);
   --foreground: var(--ink);
   --card: var(--offwhite);
@@ -61,13 +54,13 @@
   --secondary: var(--cream);
   --secondary-foreground: var(--ink);
   --muted: var(--cream);
-  --muted-foreground: oklch(0.48 0.012 70);
+  --muted-foreground: oklch(0.46 0.014 70);
   --accent: var(--gold);
   --accent-foreground: var(--ink);
   --destructive: oklch(0.505 0.166 27);
   --destructive-foreground: var(--offwhite);
-  --border: oklch(0.148 0 0 / 14%);
-  --input: oklch(0.148 0 0 / 20%);
+  --border: oklch(0.15 0 0 / 16%);
+  --input: oklch(0.15 0 0 / 22%);
   --ring: var(--gold);
 }
 
@@ -79,12 +72,19 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
+    margin: 0;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+  }
+
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
@@ -93,22 +93,28 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+@utility wordmark {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.16em;
 }
 
-/* Small uppercase editorial label */
-@utility label-eyebrow {
+@utility editorial-kicker {
   font-family: var(--font-sans);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.24em;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 
-/* Fine underline that draws in on hover */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 1px solid var(--color-gold);
+    outline-offset: 5px;
+  }
+}
+
 @utility link-rule {
   position: relative;
   display: inline-block;
@@ -119,54 +125,65 @@
     position: absolute;
     left: 0;
     bottom: 0;
-    height: 1px;
     width: 100%;
+    height: 1px;
+    background-color: currentColor;
     transform: scaleX(0);
     transform-origin: left;
-    background-color: currentColor;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   &:hover::after,
   &:focus-visible::after {
     transform: scaleX(1);
   }
+
+  &:focus-visible {
+    outline: 1px solid var(--color-gold);
+    outline-offset: 5px;
+  }
 }
 
-/* Persistent hairline that shifts to gold on hover */
 @utility link-underlined {
   position: relative;
   display: inline-block;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.4rem;
 
   &::after {
     content: "";
     position: absolute;
     left: 0;
     bottom: 0;
-    height: 1px;
     width: 100%;
+    height: 1px;
     background-color: currentColor;
-    opacity: 0.35;
+    opacity: 0.4;
     transition:
-      opacity 0.4s ease,
-      background-color 0.4s ease;
+      opacity 0.35s ease,
+      background-color 0.35s ease;
   }
 
-  &:hover::after {
+  &:hover::after,
+  &:focus-visible::after {
     opacity: 1;
     background-color: var(--color-gold);
+  }
+
+  &:focus-visible {
+    outline: 1px solid var(--color-gold);
+    outline-offset: 5px;
   }
 }
 
 @utility arrow-shift {
   & .arrow {
     display: inline-block;
-    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  &:hover .arrow {
-    transform: translateX(6px);
+  &:hover .arrow,
+  &:focus-visible .arrow {
+    transform: translateX(5px);
   }
 }
 
@@ -174,11 +191,24 @@
   overflow: hidden;
 
   & img {
-    transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   &:hover img {
-    transform: scale(1.03);
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

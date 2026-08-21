@@ -6,7 +6,7 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => setScrolled(window.scrollY > 32);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -22,27 +22,30 @@ export function Header() {
   return (
     <header
       className={[
-        "fixed inset-x-0 top-0 z-50 transition-all duration-700",
+        "fixed inset-x-0 top-0 z-50 transition-[background-color,padding,border-color] duration-500",
         scrolled || open
-          ? "bg-ink/95 border-b border-cream/12 py-4"
-          : "border-b border-transparent py-6",
+          ? "border-cream/15 bg-ink border-b py-4"
+          : "border-b border-transparent py-6 md:py-7",
       ].join(" ")}
     >
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 md:px-10">
+      <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 sm:px-8 lg:px-12">
         <a
           href="#top"
-          className="font-display text-cream text-2xl leading-none tracking-[0.18em] md:text-[1.7rem]"
+          className="text-cream wordmark text-[1.05rem] leading-none"
           onClick={() => setOpen(false)}
         >
-          SSAroma
+          SSAROMA
         </a>
 
-        <nav className="hidden items-center gap-10 lg:flex">
+        <nav
+          className="hidden items-center gap-8 lg:flex xl:gap-11"
+          aria-label="Primary navigation"
+        >
           {NAV.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="link-rule text-cream/75 hover:text-cream label-eyebrow transition-colors duration-300"
+              className="link-rule text-cream/68 hover:text-cream editorial-kicker transition-colors duration-300"
             >
               {item.label}
             </a>
@@ -51,10 +54,13 @@ export function Header() {
 
         <div className="hidden lg:block">
           <a
-            href="#collection"
-            className="link-underlined arrow-shift text-cream label-eyebrow hover:text-gold transition-colors duration-300"
+            href={LINKS.store}
+            className="link-underlined arrow-shift text-cream editorial-kicker hover:text-gold transition-colors duration-300"
           >
-            Explore Collection <span className="arrow ml-2">→</span>
+            Fragrance edit{" "}
+            <span className="arrow ml-2" aria-hidden="true">
+              ↗
+            </span>
           </a>
         </div>
 
@@ -62,8 +68,8 @@ export function Header() {
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="text-cream flex h-8 w-8 flex-col items-end justify-center gap-[6px] lg:hidden"
+          onClick={() => setOpen((value) => !value)}
+          className="text-cream focus-ring flex h-9 w-9 flex-col items-end justify-center gap-[6px] lg:hidden"
         >
           <span
             className={[
@@ -82,26 +88,29 @@ export function Header() {
 
       <div
         className={[
-          "bg-ink overflow-hidden transition-[max-height,opacity] duration-700 lg:hidden",
-          open ? "max-h-[70svh] opacity-100" : "max-h-0 opacity-0",
+          "bg-ink overflow-hidden transition-[max-height,opacity] duration-500 lg:hidden",
+          open ? "max-h-[calc(100svh-64px)] opacity-100" : "max-h-0 opacity-0",
         ].join(" ")}
       >
-        <nav className="flex flex-col px-6 pt-6 pb-10">
+        <nav
+          className="flex min-h-[calc(100svh-64px)] flex-col px-5 pt-8 pb-8 sm:px-8"
+          aria-label="Mobile navigation"
+        >
           {NAV.map((item) => (
             <a
               key={item.label}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="border-cream/12 text-cream font-display border-t py-5 text-3xl tracking-wide"
+              className="border-cream/15 text-cream font-display border-t py-5 text-[2.15rem] font-light tracking-[-0.01em]"
             >
               {item.label}
             </a>
           ))}
           <a
             href={LINKS.store}
-            className="text-gold label-eyebrow border-cream/12 border-t pt-6"
+            className="text-gold editorial-kicker border-cream/15 mt-auto border-t pt-6"
           >
-            Explore Collection →
+            Open the fragrance edit ↗
           </a>
         </nav>
       </div>
