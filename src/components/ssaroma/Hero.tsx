@@ -48,7 +48,7 @@ export function Hero() {
             height={1200}
           />
         )}
-        <div className="bg-ink/55 absolute inset-0" />
+        <div className="bg-ink/60 absolute inset-0" />
       </motion.div>
 
       <div className="relative z-10 mx-auto flex h-full max-w-[1400px] flex-col justify-end px-6 pb-24 md:px-10 md:pb-28">
@@ -90,7 +90,7 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 md:bottom-10">
+      <div className="absolute bottom-10 left-1/2 z-10 hidden -translate-x-1/2 md:block">
         <span className="text-cream/45 label-eyebrow block text-center text-[0.6rem]">Scroll</span>
         <span className="bg-cream/40 mx-auto mt-3 block h-12 w-px" />
       </div>

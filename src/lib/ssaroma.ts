@@ -3,7 +3,7 @@
 // Replace these values with the client's real details.
 // ---------------------------------------------------------------------------
 
-import heroVideo from "@/assets/media/hero-ssaroma.mp4.asset.json";
+import heroVideo from "@/assets/media/hero-ssaroma-v2.mp4.asset.json";
 
 /** Swap this single URL for the client's own cinematic hero film. */
 export const HERO_VIDEO_SRC: string = heroVideo.url;
