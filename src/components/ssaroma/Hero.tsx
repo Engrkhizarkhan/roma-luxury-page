@@ -24,7 +24,7 @@ export function Hero() {
     <section id="top" ref={ref} className="bg-ink relative h-[100svh] w-full overflow-hidden">
       <motion.div
         className="absolute inset-0"
-        style={reduced ? undefined : { scale, y }}
+        {...(reduced ? {} : { style: { scale, y } })}
       >
         {!videoFailed && (
           <video
@@ -92,7 +92,7 @@ export function Hero() {
 
       <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 md:bottom-10">
         <span className="text-cream/45 label-eyebrow block text-center text-[0.6rem]">Scroll</span>
-        <span className="via-cream/50 mx-auto mt-3 block h-12 w-px bg-gradient-to-b from-transparent to-transparent" />
+        <span className="bg-cream/40 mx-auto mt-3 block h-12 w-px" />
       </div>
     </section>
   );
