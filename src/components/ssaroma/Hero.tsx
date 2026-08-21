@@ -38,13 +38,13 @@ export function Hero() {
       </motion.div>
 
       <div className="relative z-10 mx-auto flex h-full max-w-[1480px] flex-col justify-end px-5 pb-20 sm:px-8 md:pb-24 lg:px-12 lg:pb-28">
-        <div className="max-w-[870px] lg:ml-[5%]">
-          <motion.p className="text-gold editorial-kicker" {...rise(0.12)}>
+        <div className="max-w-[870px] lg:ml-[5%] ">
+          {/* <motion.p className="text-gold editorial-kicker" {...rise(0.12)}> */}
             Fragrance boutique · Peshawar
-          </motion.p>
+          {/* </motion.p> */}
 
           <motion.h1
-            className="text-cream font-display mt-7 max-w-[13ch] text-[3.4rem] leading-[0.92] font-light tracking-[-0.035em] sm:text-[4.8rem] md:text-[6.2rem] lg:text-[7.15rem]"
+            className="text-cream font-display mt-7 max-w-[14ch] text-[3.4rem] leading-[0.92] font-light tracking-[-0.035em] sm:text-[4.8rem] md:text-[6.2rem] lg:text-[7.15rem]"
             {...rise(0.24)}
           >
             The one they remember you by.
@@ -54,7 +54,7 @@ export function Hero() {
             className="text-cream/72 mt-8 max-w-[34rem] text-[0.95rem] leading-[1.8] sm:text-base"
             {...rise(0.38)}
           >
-            Discover your signature at SSAROMA—an intimate fragrance house where time, skin and
+            Discover your signature at SSAROMA - an intimate fragrance house where time, skin and
             instinct make the final choice.
           </motion.p>
 
