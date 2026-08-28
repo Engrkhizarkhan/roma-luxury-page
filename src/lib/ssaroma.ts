@@ -11,8 +11,8 @@ export const SHOP = {
 } as const;
 
 export const LINKS = {
-  // The separate, simple product destination requested for the collection.
-  store: "https://product.ssaroma.com",
+  // Internal storefront route. Backend wiring will be added later.
+  store: "/products",
   instagram: "https://instagram.com/ssaroma",
   map: "https://www.google.com/maps/search/?api=1&query=SSAROMA+Peshawar",
 } as const;
