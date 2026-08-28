@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Check, Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, type MouseEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ProductMediaCarousel } from "@/components/ssaroma/ProductMediaCarousel";
 import { ShopShell } from "@/components/ssaroma/ShopChrome";
@@ -417,6 +417,25 @@ function ProductResult({
   view: ViewMode;
   priority: boolean;
 }) {
+  const navigate = Route.useNavigate();
+
+  const openProduct = () => {
+    void navigate({ to: "/products/$slug", params: { slug: item.slug } });
+  };
+
+  const handleCardClick = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+
+    if (target.closest("a, button, input, select, textarea")) return;
+    openProduct();
+  };
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget || event.key !== "Enter") return;
+    event.preventDefault();
+    openProduct();
+  };
+
   const quickAdd = () => {
     if (item.outOfStock) return;
     addToCart(item.id);
@@ -427,7 +446,14 @@ function ProductResult({
 
   if (view === "list") {
     return (
-      <article className="border-ink/14 grid gap-5 border-t py-6 first:border-t-0 sm:grid-cols-[180px_1fr_auto] sm:items-center">
+      <article
+        role="link"
+        tabIndex={0}
+        aria-label={`View ${item.name}`}
+        onClick={handleCardClick}
+        onKeyDown={handleCardKeyDown}
+        className="border-ink/14 focus-ring grid cursor-pointer gap-5 border-t py-6 first:border-t-0 sm:grid-cols-[180px_1fr_auto] sm:items-center"
+      >
         <ProductMediaCarousel
           product={item}
           imageClassName="aspect-[4/5] sm:h-56"
@@ -470,7 +496,14 @@ function ProductResult({
   }
 
   return (
-    <article className="group">
+    <article
+      role="link"
+      tabIndex={0}
+      aria-label={`View ${item.name}`}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      className="group focus-ring cursor-pointer"
+    >
       <div className="relative">
         <ProductMediaCarousel product={item} priority={priority} />
         {item.outOfStock ? (
