@@ -49,6 +49,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -101,7 +102,7 @@ const DATA_KEY = "ssaroma-dashboard-demo-data-v2";
 const LOGIN_EMAIL = "admin@ssaroma.com";
 const LOGIN_PASSWORD = "ssaroma-admin";
 
-type DashboardView = "overview" | "orders" | "fulfillment" | "catalog" | "promotions";
+type DashboardView = "overview" | "orders" | "fulfillment" | "finance" | "catalog" | "promotions";
 type CatalogView = "table" | "grid";
 type OrderStatus = OrderRecord["status"];
 
@@ -115,6 +116,13 @@ type ProductDraft = {
   concentration: ProductItem["concentration"];
   sizeMl: string;
   price: string;
+  rating: string;
+  reviewCount: string;
+  mood: string;
+  story: string;
+  topNotes: string;
+  heartNotes: string;
+  baseNotes: string;
   outOfStock: boolean;
   media: ProductMediaItem[];
 };
@@ -132,6 +140,7 @@ type SavedDashboardData = {
   products: ProductItem[];
   orders: OrderRecord[];
   promos: PromoCode[];
+  dismissedFulfillmentIds?: string[];
 };
 
 const extraOrders: OrderRecord[] = [
@@ -231,6 +240,48 @@ const citySalesData = [
   { city: "Other", revenue: 151000 },
 ];
 
+const financeDailyData = [
+  { date: "2026-08-01", revenue: 43200, orders: 2 },
+  { date: "2026-08-02", revenue: 38600, orders: 2 },
+  { date: "2026-08-03", revenue: 58100, orders: 3 },
+  { date: "2026-08-04", revenue: 42100, orders: 1 },
+  { date: "2026-08-05", revenue: 64700, orders: 3 },
+  { date: "2026-08-06", revenue: 29700, orders: 1 },
+  { date: "2026-08-07", revenue: 46200, orders: 2 },
+  { date: "2026-08-08", revenue: 61100, orders: 3 },
+  { date: "2026-08-09", revenue: 40500, orders: 2 },
+  { date: "2026-08-10", revenue: 47300, orders: 2 },
+  { date: "2026-08-11", revenue: 59200, orders: 3 },
+  { date: "2026-08-12", revenue: 44900, orders: 2 },
+  { date: "2026-08-13", revenue: 63600, orders: 3 },
+  { date: "2026-08-14", revenue: 48700, orders: 2 },
+  { date: "2026-08-15", revenue: 42900, orders: 2 },
+  { date: "2026-08-16", revenue: 61800, orders: 3 },
+  { date: "2026-08-17", revenue: 45500, orders: 2 },
+  { date: "2026-08-18", revenue: 66800, orders: 3 },
+  { date: "2026-08-19", revenue: 40100, orders: 2 },
+  { date: "2026-08-20", revenue: 51900, orders: 2 },
+  { date: "2026-08-21", revenue: 58600, orders: 3 },
+  { date: "2026-08-22", revenue: 49400, orders: 3 },
+  { date: "2026-08-23", revenue: 48900, orders: 2 },
+  { date: "2026-08-24", revenue: 55700, orders: 3 },
+  { date: "2026-08-25", revenue: 67400, orders: 3 },
+  { date: "2026-08-26", revenue: 72600, orders: 3 },
+  { date: "2026-08-27", revenue: 81400, orders: 4 },
+  { date: "2026-08-28", revenue: 55600, orders: 2 },
+].map((entry, index) => {
+  const costOfGoods = Math.round(entry.revenue * (0.31 + (index % 3) * 0.012));
+  const deliveryCost = entry.orders * 340;
+  const refunds = index === 8 ? 16800 : index === 19 ? 21400 : index === 25 ? 19600 : 0;
+  return {
+    ...entry,
+    costOfGoods,
+    deliveryCost,
+    refunds,
+    profit: entry.revenue - costOfGoods - deliveryCost - refunds,
+  };
+});
+
 const emptyProductDraft: ProductDraft = {
   id: null,
   name: "",
@@ -241,6 +292,13 @@ const emptyProductDraft: ProductDraft = {
   concentration: "EDP",
   sizeMl: "",
   price: "",
+  rating: "5.0",
+  reviewCount: "0",
+  mood: "",
+  story: "",
+  topNotes: "",
+  heartNotes: "",
+  baseNotes: "",
   outOfStock: false,
   media: [],
 };
@@ -258,6 +316,7 @@ const navItems: { value: DashboardView; label: string; icon: typeof LayoutDashbo
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "orders", label: "Orders", icon: ShoppingBag },
   { value: "fulfillment", label: "Fulfillment", icon: Truck },
+  { value: "finance", label: "Finance", icon: CircleDollarSign },
   { value: "catalog", label: "Catalog", icon: Box },
   { value: "promotions", label: "Promotions", icon: Tag },
 ];
@@ -268,6 +327,7 @@ function SecretDashboard() {
   const [productRows, setProductRows] = useState<ProductItem[]>(products);
   const [orders, setOrders] = useState<OrderRecord[]>(allSeedOrders);
   const [promos, setPromos] = useState<PromoCode[]>(dashboardSeedPromos);
+  const [dismissedFulfillmentIds, setDismissedFulfillmentIds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
@@ -291,6 +351,9 @@ function SecretDashboard() {
         if (Array.isArray(parsed.products)) setProductRows(parsed.products);
         if (Array.isArray(parsed.orders)) setOrders(parsed.orders);
         if (Array.isArray(parsed.promos)) setPromos(parsed.promos);
+        if (Array.isArray(parsed.dismissedFulfillmentIds)) {
+          setDismissedFulfillmentIds(parsed.dismissedFulfillmentIds);
+        }
       } catch {
         window.localStorage.removeItem(DATA_KEY);
       }
@@ -302,9 +365,9 @@ function SecretDashboard() {
     if (!ready) return;
     window.localStorage.setItem(
       DATA_KEY,
-      JSON.stringify({ products: productRows, orders, promos }),
+      JSON.stringify({ products: productRows, orders, promos, dismissedFulfillmentIds }),
     );
-  }, [orders, productRows, promos, ready]);
+  }, [dismissedFulfillmentIds, orders, productRows, promos, ready]);
 
   useEffect(() => {
     if (!notice) return;
@@ -348,8 +411,16 @@ function SecretDashboard() {
     setOrders((current) =>
       current.map((order) => (order.id === id ? { ...order, status } : order)),
     );
+    if (status !== "delivered") {
+      setDismissedFulfillmentIds((current) => current.filter((orderId) => orderId !== id));
+    }
     setSelectedOrder((current) => (current?.id === id ? { ...current, status } : current));
     setNotice(`${id} moved to ${statusLabel(status).toLowerCase()}.`);
+  };
+
+  const dismissFulfillmentOrder = (id: string) => {
+    setDismissedFulfillmentIds((current) => (current.includes(id) ? current : [...current, id]));
+    setNotice(`${id} was cleared from Fulfillment and remains available in Orders and Finance.`);
   };
 
   const openNewProduct = () => {
@@ -368,6 +439,13 @@ function SecretDashboard() {
       concentration: product.concentration,
       sizeMl: String(product.sizeMl),
       price: String(product.price),
+      rating: String(product.rating),
+      reviewCount: String(product.reviewCount),
+      mood: product.mood,
+      story: product.story,
+      topNotes: product.notes.top.join(", "),
+      heartNotes: product.notes.heart.join(", "),
+      baseNotes: product.notes.base.join(", "),
       outOfStock: product.outOfStock,
       media: getProductMedia(product),
     });
@@ -377,12 +455,29 @@ function SecretDashboard() {
   const saveProduct = () => {
     const price = Number(productDraft.price);
     const sizeMl = Number(productDraft.sizeMl);
+    const rating = Number(productDraft.rating);
+    const reviewCount = Math.floor(Number(productDraft.reviewCount));
+    const notes = {
+      top: parseNoteList(productDraft.topNotes),
+      heart: parseNoteList(productDraft.heartNotes),
+      base: parseNoteList(productDraft.baseNotes),
+    };
     if (
       !productDraft.name.trim() ||
       !productDraft.slug.trim() ||
       !productDraft.family.trim() ||
+      !productDraft.mood.trim() ||
+      !productDraft.story.trim() ||
+      notes.top.length === 0 ||
+      notes.heart.length === 0 ||
+      notes.base.length === 0 ||
       price <= 0 ||
-      sizeMl <= 0
+      sizeMl <= 0 ||
+      !Number.isFinite(rating) ||
+      rating < 0 ||
+      rating > 5 ||
+      !Number.isFinite(reviewCount) ||
+      reviewCount < 0
     ) {
       setNotice("Complete the required product details before saving.");
       return;
@@ -411,6 +506,11 @@ function SecretDashboard() {
                 concentration: productDraft.concentration,
                 sizeMl,
                 price,
+                rating,
+                reviewCount,
+                mood: productDraft.mood.trim(),
+                story: productDraft.story.trim(),
+                notes,
                 compareAt: Math.max(product.compareAt, Math.round(price * 1.12)),
                 outOfStock: productDraft.outOfStock,
                 images,
@@ -432,6 +532,11 @@ function SecretDashboard() {
         concentration: productDraft.concentration,
         sizeMl,
         price,
+        rating,
+        reviewCount,
+        mood: productDraft.mood.trim(),
+        story: productDraft.story.trim(),
+        notes,
         compareAt: Math.round(price * 1.12),
         outOfStock: productDraft.outOfStock,
         images,
@@ -482,6 +587,7 @@ function SecretDashboard() {
     setProductRows(products);
     setOrders(allSeedOrders);
     setPromos(dashboardSeedPromos);
+    setDismissedFulfillmentIds([]);
     window.localStorage.removeItem(DATA_KEY);
     setNotice("Demo data was restored.");
   };
@@ -511,6 +617,7 @@ function SecretDashboard() {
     overview: ["Good evening, Kadir.", "Here is what is happening across SSAROMA today."],
     orders: ["Orders", "Review, filter and manage every client order."],
     fulfillment: ["Fulfillment", "Move orders from confirmation through delivery."],
+    finance: ["Finance", "Track revenue, COD collection, costs and order performance."],
     catalog: ["Catalog", "Manage fragrances, availability and product media."],
     promotions: ["Promotions", "Control offers, eligibility and campaign windows."],
   };
@@ -520,7 +627,14 @@ function SecretDashboard() {
       {notice ? <DashboardNotice message={notice} onClose={() => setNotice(null)} /> : null}
       <aside className="bg-[#171713] text-[#f3efe5] sticky top-0 hidden h-screen flex-col border-r border-white/8 lg:flex">
         <DashboardBrand />
-        <DashboardNav value={view} onChange={setView} />
+        <DashboardNav
+          value={view}
+          onChange={setView}
+          fulfillmentCount={
+            orders.filter((order) => order.status !== "delivered" && order.status !== "cancelled")
+              .length
+          }
+        />
         <div className="mt-auto border-t border-white/10 p-4">
           <button
             type="button"
@@ -568,6 +682,11 @@ function SecretDashboard() {
                 <DashboardBrand />
                 <DashboardNav
                   value={view}
+                  fulfillmentCount={
+                    orders.filter(
+                      (order) => order.status !== "delivered" && order.status !== "cancelled",
+                    ).length
+                  }
                   onChange={(next) => {
                     setView(next);
                     setMobileNavOpen(false);
@@ -646,10 +765,13 @@ function SecretDashboard() {
           {view === "fulfillment" ? (
             <FulfillmentView
               orders={orders}
+              dismissedIds={dismissedFulfillmentIds}
               updateStatus={updateOrderStatus}
+              dismissDelivered={dismissFulfillmentOrder}
               openOrder={setSelectedOrder}
             />
           ) : null}
+          {view === "finance" ? <FinanceView orders={orders} /> : null}
           {view === "catalog" ? (
             <CatalogViewPanel
               products={productRows}
@@ -835,9 +957,11 @@ function DashboardNotice({ message, onClose }: { message: string; onClose: () =>
 function DashboardNav({
   value,
   onChange,
+  fulfillmentCount,
 }: {
   value: DashboardView;
   onChange: (value: DashboardView) => void;
+  fulfillmentCount: number;
 }) {
   return (
     <nav className="space-y-1 px-3 py-6" aria-label="Dashboard navigation">
@@ -855,7 +979,9 @@ function DashboardNav({
             <Icon className="h-4 w-4" />
             <span>{item.label}</span>
             {item.value === "fulfillment" ? (
-              <span className="ml-auto bg-white/8 px-1.5 py-0.5 text-[0.58rem]">4</span>
+              <span className="ml-auto bg-white/8 px-1.5 py-0.5 text-[0.58rem]">
+                {fulfillmentCount}
+              </span>
             ) : null}
           </button>
         );
@@ -1464,11 +1590,15 @@ function OrdersView({
 
 function FulfillmentView({
   orders,
+  dismissedIds,
   updateStatus,
+  dismissDelivered,
   openOrder,
 }: {
   orders: OrderRecord[];
+  dismissedIds: string[];
   updateStatus: (id: string, status: OrderStatus) => void;
+  dismissDelivered: (id: string) => void;
   openOrder: (order: OrderRecord) => void;
 }) {
   const columns: { status: OrderStatus; title: string; note: string }[] = [
@@ -1495,7 +1625,11 @@ function FulfillmentView({
       </div>
       <div className="flex gap-4 overflow-x-auto pb-5 xl:grid xl:grid-cols-4">
         {columns.map((column) => {
-          const columnOrders = orders.filter((order) => order.status === column.status);
+          const columnOrders = orders.filter(
+            (order) =>
+              order.status === column.status &&
+              !(column.status === "delivered" && dismissedIds.includes(order.id)),
+          );
           return (
             <section
               key={column.status}
@@ -1531,9 +1665,22 @@ function FulfillmentView({
                       >
                         {order.id}
                       </button>
-                      <span className="text-[0.58rem] text-black/35">
-                        {order.items} {order.items === 1 ? "item" : "items"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[0.58rem] text-black/35">
+                          {order.items} {order.items === 1 ? "item" : "items"}
+                        </span>
+                        {column.status === "delivered" ? (
+                          <button
+                            type="button"
+                            onClick={() => dismissDelivered(order.id)}
+                            className="border-black/12 hover:border-[#9a3d2e] hover:text-[#9a3d2e] flex h-6 w-6 items-center justify-center border text-black/35"
+                            aria-label={`Clear delivered order ${order.id} from fulfillment`}
+                            title="Clear from fulfillment"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                     <p className="mt-4 text-sm font-medium">{order.customer}</p>
                     <p className="mt-1 text-[0.62rem] text-black/40">
@@ -1575,6 +1722,362 @@ function FulfillmentView({
             </section>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function FinanceView({ orders }: { orders: OrderRecord[] }) {
+  const [fromDate, setFromDate] = useState("2026-08-01");
+  const [toDate, setToDate] = useState("2026-08-28");
+
+  const setTrailingRange = (days: number) => {
+    const end = financeDailyData[financeDailyData.length - 1]?.date ?? "2026-08-28";
+    const start = new Date(`${end}T00:00:00Z`);
+    start.setUTCDate(start.getUTCDate() - (days - 1));
+    setFromDate(start.toISOString().slice(0, 10));
+    setToDate(end);
+  };
+
+  const validRange = fromDate <= toDate;
+  const daily = validRange
+    ? financeDailyData.filter((entry) => entry.date >= fromDate && entry.date <= toDate)
+    : [];
+  const rangeOrders = validRange
+    ? orders.filter((order) => {
+        const date = order.placedAt.slice(0, 10);
+        return date >= fromDate && date <= toDate;
+      })
+    : [];
+  const totals = daily.reduce(
+    (summary, entry) => ({
+      revenue: summary.revenue + entry.revenue,
+      orders: summary.orders + entry.orders,
+      costOfGoods: summary.costOfGoods + entry.costOfGoods,
+      deliveryCost: summary.deliveryCost + entry.deliveryCost,
+      refunds: summary.refunds + entry.refunds,
+      profit: summary.profit + entry.profit,
+    }),
+    { revenue: 0, orders: 0, costOfGoods: 0, deliveryCost: 0, refunds: 0, profit: 0 },
+  );
+  const averageOrder = totals.orders > 0 ? Math.round(totals.revenue / totals.orders) : 0;
+  const margin = totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0;
+  const collectedCod = Math.max(0, Math.round((totals.revenue - totals.refunds) * 0.976));
+  const pendingCod = rangeOrders
+    .filter((order) => order.status !== "delivered" && order.status !== "cancelled")
+    .reduce((sum, order) => sum + order.total, 0);
+  const chartData = daily.map((entry) => ({
+    ...entry,
+    label: new Date(`${entry.date}T00:00:00Z`).toLocaleDateString("en-PK", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }),
+  }));
+  const statusRows = [...statusOrder, "cancelled" as const].map((status) => {
+    const matching = rangeOrders.filter((order) => order.status === status);
+    return {
+      status,
+      count: matching.length,
+      value: matching.reduce((sum, order) => sum + order.total, 0),
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      <section className="border border-black/10 bg-[#f7f5ef] p-4 sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-sm font-medium">Reporting period</p>
+            <p className="mt-1 text-xs text-black/42">
+              Revenue, costs, COD and orders update for the selected dates.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="From date">
+              <Input
+                type="date"
+                min="2026-08-01"
+                max="2026-08-28"
+                value={fromDate}
+                onChange={(event) => setFromDate(event.target.value)}
+                className="border-black/15 w-42 bg-transparent"
+              />
+            </Field>
+            <Field label="To date">
+              <Input
+                type="date"
+                min="2026-08-01"
+                max="2026-08-28"
+                value={toDate}
+                onChange={(event) => setToDate(event.target.value)}
+                className="border-black/15 w-42 bg-transparent"
+              />
+            </Field>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTrailingRange(7)}
+              className="border-black/15 bg-transparent"
+            >
+              Last 7 days
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTrailingRange(28)}
+              className="border-black/15 bg-transparent"
+            >
+              Full month
+            </Button>
+          </div>
+        </div>
+        {!validRange ? (
+          <p className="mt-4 text-xs text-[#9a3d2e]">From date must be before the to date.</p>
+        ) : null}
+      </section>
+
+      <div className="grid border border-black/10 bg-[#f7f5ef] sm:grid-cols-2 xl:grid-cols-4">
+        <FinanceStat
+          label="Gross revenue"
+          value={formatMoney(totals.revenue)}
+          note="before costs"
+        />
+        <FinanceStat label="Recorded orders" value={String(totals.orders)} note="within range" />
+        <FinanceStat label="Average order" value={formatMoney(averageOrder)} note="gross AOV" />
+        <FinanceStat
+          label="Operating profit"
+          value={formatMoney(totals.profit)}
+          note={`${margin.toFixed(1)}% margin`}
+        />
+      </div>
+
+      <div className="grid border border-black/10 bg-[#f7f5ef] sm:grid-cols-3">
+        <BusinessPulse
+          label="COD collected"
+          value={formatMoney(collectedCod)}
+          note="97.6% successful collection"
+        />
+        <BusinessPulse
+          label="Pending COD"
+          value={formatMoney(pendingCod)}
+          note="open order records"
+        />
+        <BusinessPulse
+          label="Refunds"
+          value={formatMoney(totals.refunds)}
+          note="approved in selected period"
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.55fr_0.85fr]">
+        <section className="border border-black/10 bg-[#f7f5ef] p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Revenue and profit trend</p>
+              <p className="mt-1 text-xs text-black/42">Daily performance for the selected range</p>
+            </div>
+            <div className="flex items-center gap-4 text-[0.65rem] text-black/48">
+              <span className="flex items-center gap-2">
+                <i className="h-0.5 w-4 bg-[#171713]" /> Revenue
+              </span>
+              <span className="flex items-center gap-2">
+                <i className="h-0.5 w-4 bg-[#aa8755]" /> Profit
+              </span>
+            </div>
+          </div>
+          <div className="mt-7 h-78">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ left: -8, right: 10, top: 8 }}>
+                <CartesianGrid vertical={false} stroke="#17171318" />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={24}
+                  tick={{ fill: "#17171377", fontSize: 10 }}
+                  dy={8}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#17171366", fontSize: 10 }}
+                  tickFormatter={(value: number) => `${Math.round(value / 1000)}k`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 0,
+                    border: "1px solid #17171322",
+                    background: "#f7f5ef",
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number, name: string) => [
+                    formatMoney(value),
+                    name === "revenue" ? "Revenue" : "Profit",
+                  ]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#171713"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="profit"
+                  stroke="#aa8755"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="border border-black/10 bg-[#f7f5ef] p-5 sm:p-6">
+          <div>
+            <p className="text-sm font-medium">Cost structure</p>
+            <p className="mt-1 text-xs text-black/42">Where period revenue is allocated</p>
+          </div>
+          <div className="mt-7 space-y-5">
+            <FinanceBreakdown
+              label="Cost of goods"
+              value={totals.costOfGoods}
+              total={totals.revenue}
+            />
+            <FinanceBreakdown
+              label="Courier expense"
+              value={totals.deliveryCost}
+              total={totals.revenue}
+            />
+            <FinanceBreakdown label="Refunds" value={totals.refunds} total={totals.revenue} />
+            <FinanceBreakdown
+              label="Operating profit"
+              value={totals.profit}
+              total={totals.revenue}
+              accent
+            />
+          </div>
+          <div className="mt-8 border-t border-black/10 pt-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-black/45">Total operating costs</span>
+              <span className="text-sm font-medium tabular-nums">
+                {formatMoney(totals.costOfGoods + totals.deliveryCost + totals.refunds)}
+              </span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
+        <section className="border border-black/10 bg-[#f7f5ef]">
+          <SectionHeader title="Order position" subtitle="Stored order records in this range" />
+          <div className="px-5 pb-4">
+            {statusRows.map((row) => (
+              <div
+                key={row.status}
+                className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-black/8 py-4 first:border-t-0"
+              >
+                <div className="flex items-center gap-2.5">
+                  <StatusDot status={row.status} />
+                  <span className="text-xs">{statusLabel(row.status)}</span>
+                  <span className="text-[0.65rem] text-black/35">{row.count}</span>
+                </div>
+                <span className="text-xs font-medium tabular-nums">{formatMoney(row.value)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="overflow-hidden border border-black/10 bg-[#f7f5ef]">
+          <SectionHeader
+            title="Daily financial ledger"
+            subtitle="Gross, costs, refunds and net result"
+          />
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-black/8">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Orders</TableHead>
+                  <TableHead>Gross</TableHead>
+                  <TableHead>Costs</TableHead>
+                  <TableHead>Refunds</TableHead>
+                  <TableHead className="text-right">Profit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...chartData]
+                  .reverse()
+                  .slice(0, 12)
+                  .map((entry) => (
+                    <TableRow key={entry.date} className="border-black/8">
+                      <TableCell className="text-xs">{entry.label}</TableCell>
+                      <TableCell>{entry.orders}</TableCell>
+                      <TableCell className="font-medium tabular-nums">
+                        {formatMoney(entry.revenue)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatMoney(entry.costOfGoods + entry.deliveryCost)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">{formatMoney(entry.refunds)}</TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatMoney(entry.profit)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+          {chartData.length === 0 ? (
+            <p className="border-t border-black/10 px-5 py-8 text-center text-xs text-black/38">
+              No financial records fall inside this date range.
+            </p>
+          ) : null}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function FinanceStat({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <article className="border-black/10 border-b p-5 last:border-b-0 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(n+3)]:border-b-0 xl:border-r xl:border-b-0 xl:last:border-r-0">
+      <p className="text-xs text-black/45">{label}</p>
+      <p className="mt-4 text-[1.65rem] font-medium tracking-[-0.03em] tabular-nums">{value}</p>
+      <p className="mt-2 text-[0.65rem] text-black/38">{note}</p>
+    </article>
+  );
+}
+
+function FinanceBreakdown({
+  label,
+  value,
+  total,
+  accent = false,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  accent?: boolean;
+}) {
+  const percent = total > 0 ? Math.max(0, (value / total) * 100) : 0;
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-4 text-xs">
+        <span className="text-black/52">{label}</span>
+        <span className="font-medium tabular-nums">
+          {formatMoney(value)} · {percent.toFixed(1)}%
+        </span>
+      </div>
+      <div className="h-1.5 bg-black/7">
+        <div
+          className={`h-full ${accent ? "bg-[#47705a]" : "bg-[#aa8755]"}`}
+          style={{ width: `${Math.min(100, percent)}%` }}
+        />
       </div>
     </div>
   );
@@ -2121,16 +2624,9 @@ function OrderDetail({
               <span className="text-lg font-medium tabular-nums">{formatMoney(order.total)}</span>
             </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div>
             <Button
-              variant="outline"
-              className="border-black/15 bg-transparent"
-              onClick={() => notify("Shipping label is ready to print.")}
-            >
-              Print shipping label
-            </Button>
-            <Button
-              className="bg-[#171713] text-white hover:bg-[#aa8755] hover:text-black"
+              className="bg-[#171713] text-white hover:bg-[#aa8755] hover:text-black w-full"
               onClick={() => notify("Order update sent to the client.")}
             >
               Notify client
@@ -2332,6 +2828,94 @@ function ProductEditor({
               </button>
             </Field>
           </div>
+          <section className="border-t border-black/10 pt-6">
+            <div>
+              <p className="text-xs font-medium">Client response</p>
+              <p className="mt-1 text-[0.65rem] text-black/42">
+                These values appear with the fragrance in the catalog and performance reports.
+              </p>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Review rating (0–5)">
+                <Input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={draft.rating}
+                  onChange={(event) => update("rating", event.target.value)}
+                  placeholder="4.9"
+                />
+              </Field>
+              <Field label="Published review count">
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={draft.reviewCount}
+                  onChange={(event) => update("reviewCount", event.target.value)}
+                  placeholder="146"
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="border-t border-black/10 pt-6">
+            <div>
+              <p className="text-xs font-medium">Fragrance story and composition</p>
+              <p className="mt-1 text-[0.65rem] text-black/42">
+                Manage the copy and note pyramid shown on the product detail page.
+              </p>
+            </div>
+            <div className="mt-4 space-y-4">
+              <Field label="Mood line">
+                <Input
+                  value={draft.mood}
+                  onChange={(event) => update("mood", event.target.value)}
+                  placeholder="Smoky, poised and magnetic"
+                />
+              </Field>
+              <Field label="Fragrance description">
+                <Textarea
+                  value={draft.story}
+                  onChange={(event) => update("story", event.target.value)}
+                  rows={5}
+                  placeholder="Noir Oud opens with dry spice before settling into an elegant leather core..."
+                  className="resize-y"
+                />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="Top notes">
+                  <Textarea
+                    value={draft.topNotes}
+                    onChange={(event) => update("topNotes", event.target.value)}
+                    rows={4}
+                    placeholder="Saffron, Pink Pepper, Cardamom"
+                  />
+                </Field>
+                <Field label="Heart notes">
+                  <Textarea
+                    value={draft.heartNotes}
+                    onChange={(event) => update("heartNotes", event.target.value)}
+                    rows={4}
+                    placeholder="Oud Accord, Labdanum, Suede"
+                  />
+                </Field>
+                <Field label="Base notes">
+                  <Textarea
+                    value={draft.baseNotes}
+                    onChange={(event) => update("baseNotes", event.target.value)}
+                    rows={4}
+                    placeholder="Cedarwood, Incense, Musk"
+                  />
+                </Field>
+              </div>
+              <p className="text-[0.65rem] text-black/38">
+                Separate individual notes with commas or place each note on a new line.
+              </p>
+            </div>
+          </section>
+
           <section className="border-t border-black/10 pt-6">
             <div className="flex items-end justify-between gap-4">
               <div>
@@ -2636,6 +3220,12 @@ function formatShortDate(value: string) {
     month: "short",
     year: "numeric",
   });
+}
+function parseNoteList(value: string) {
+  return value
+    .split(/[,\n·]+/)
+    .map((note) => note.trim())
+    .filter(Boolean);
 }
 function slugify(value: string) {
   return value
