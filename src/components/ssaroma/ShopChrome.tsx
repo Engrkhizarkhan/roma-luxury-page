@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -55,9 +54,9 @@ export function ShopShell({ children }: ShellProps) {
 
   return (
     <div className="bg-offwhite text-ink min-h-screen">
-      <div className="bg-[#aa8755] px-4 py-2 text-center text-[0.62rem] font-semibold tracking-[0.16em] text-[#15130f] uppercase">
+      {/* <div className="bg-[#aa8755] px-4 py-2 text-center text-[0.62rem] font-semibold tracking-[0.16em] text-[#15130f] uppercase">
         Complimentary delivery across Pakistan on orders over PKR 20,000
-      </div>
+      </div> */}
 
       <header className="bg-ink border-cream/10 sticky top-0 z-40 border-b">
         <div className="mx-auto grid h-18 max-w-370 grid-cols-[1fr_auto_1fr] items-center px-5 sm:px-8 lg:px-12">
@@ -246,16 +245,14 @@ export function ShopShell({ children }: ShellProps) {
                       <p className="text-ink/50 mt-2 text-xs">
                         Delivery and payment are confirmed at checkout.
                       </p>
-                      <Button
-                        className="bg-ink text-cream hover:bg-[#aa8755] hover:text-ink mt-5 h-12 w-full"
-                        onClick={() =>
-                          toast.success("Demo checkout is ready", {
-                            description: "Your selection has been saved on this device.",
-                          })
-                        }
-                      >
-                        Continue to checkout
-                      </Button>
+                      <SheetClose asChild>
+                        <a
+                          href="/checkout"
+                          className="editorial-kicker bg-ink text-cream hover:bg-[#aa8755] hover:text-ink mt-5 flex h-12 w-full items-center justify-center transition-colors"
+                        >
+                          Continue to checkout
+                        </a>
+                      </SheetClose>
                       <button
                         type="button"
                         className="editorial-kicker text-ink/48 hover:text-ink mt-4 w-full"

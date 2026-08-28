@@ -2,11 +2,9 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestUrl } from "@tanstack/react-start/server";
 import {
-  ArrowLeft,
-  ArrowRight,
+  Banknote,
   Check,
   ChevronRight,
-  Gift,
   Heart,
   Minus,
   PackageCheck,
@@ -14,7 +12,6 @@ import {
   Share2,
   ShieldCheck,
   Star,
-  Store,
   Truck,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -22,16 +19,8 @@ import { toast } from "sonner";
 import { ProductMediaCarousel } from "@/components/ssaroma/ProductMediaCarousel";
 import { ShopShell } from "@/components/ssaroma/ShopChrome";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { addToCart } from "@/lib/cart";
-import { formatMoney, products, type ProductItem } from "@/lib/catalog";
+import { formatMoney, getProductMedia, products, type ProductItem } from "@/lib/catalog";
 
 const getSiteOrigin = createServerFn({ method: "GET" }).handler(
   () => getRequestUrl({ xForwardedHost: true }).origin,
@@ -76,8 +65,6 @@ function ProductDetail() {
   const { product } = Route.useLoaderData();
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
-  const [reserveOpen, setReserveOpen] = useState(false);
-  const [reservationSent, setReservationSent] = useState(false);
 
   if (!product) {
     return (
@@ -250,21 +237,21 @@ function ProductDetail() {
               >
                 {product.outOfStock
                   ? "Currently unavailable"
-                  : `Add to bag · ${formatMoney(product.price * quantity)}`}
+                  : `Add to cart · ${formatMoney(product.price * quantity)}`}
               </Button>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => setReserveOpen(true)}
-              className="border-ink/24 mt-3 h-12 w-full bg-transparent hover:bg-cream"
+            <a
+              href={`/checkout?product=${encodeURIComponent(product.slug)}&quantity=${quantity}`}
+              className={`editorial-kicker mt-3 flex h-12 w-full items-center justify-center border transition-colors ${product.outOfStock ? "pointer-events-none border-ink/12 text-ink/30" : "border-ink bg-cream text-ink hover:bg-[#aa8755]"}`}
+              aria-disabled={product.outOfStock}
             >
-              <Store className="mr-2 h-4 w-4" /> Reserve in Peshawar boutique
-            </Button>
+              Buy now · Cash on delivery
+            </a>
 
             <div className="border-ink/12 mt-7 grid grid-cols-2 border-y py-5">
               <Service icon={Truck} label="Complimentary delivery" />
-              <Service icon={Gift} label="Signature gift wrapping" />
+              <Service icon={Banknote} label="Cash on delivery" />
               <Service icon={ShieldCheck} label="Authenticity assured" />
               <Service icon={PackageCheck} label="7-day sealed returns" />
             </div>
@@ -390,82 +377,6 @@ function ProductDetail() {
           ))}
         </div>
       </section>
-
-      <Dialog
-        open={reserveOpen}
-        onOpenChange={(open) => {
-          setReserveOpen(open);
-          if (!open) setReservationSent(false);
-        }}
-      >
-        <DialogContent className="bg-offwhite border-ink/18 rounded-none p-0 sm:max-w-lg">
-          {reservationSent ? (
-            <div className="px-8 py-12 text-center">
-              <span className="bg-ink text-cream mx-auto flex h-11 w-11 items-center justify-center">
-                <Check className="h-5 w-5" />
-              </span>
-              <DialogTitle className="font-display mt-6 text-4xl font-light">
-                Your visit request is noted.
-              </DialogTitle>
-              <DialogDescription className="text-ink/58 mt-4 leading-7">
-                The boutique team will confirm your preferred time and hold {product.name} for your
-                consultation.
-              </DialogDescription>
-              <Button onClick={() => setReserveOpen(false)} className="bg-ink text-cream mt-7">
-                Close
-              </Button>
-            </div>
-          ) : (
-            <>
-              <DialogHeader className="border-ink/12 border-b px-7 py-6 text-left">
-                <DialogTitle className="font-display text-3xl font-light">
-                  Reserve {product.name}
-                </DialogTitle>
-                <DialogDescription>
-                  Request a private fragrance consultation at our Peshawar boutique.
-                </DialogDescription>
-              </DialogHeader>
-              <form
-                className="space-y-4 px-7 py-6"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setReservationSent(true);
-                }}
-              >
-                <label className="block">
-                  <span className="editorial-kicker text-ink/50">Your name</span>
-                  <Input required className="border-ink/22 mt-2 h-11" placeholder="Full name" />
-                </label>
-                <label className="block">
-                  <span className="editorial-kicker text-ink/50">Mobile number</span>
-                  <Input
-                    required
-                    type="tel"
-                    className="border-ink/22 mt-2 h-11"
-                    placeholder="03XX XXXXXXX"
-                  />
-                </label>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="editorial-kicker text-ink/50">Preferred date</span>
-                    <Input required type="date" className="border-ink/22 mt-2 h-11" />
-                  </label>
-                  <label className="block">
-                    <span className="editorial-kicker text-ink/50">Preferred time</span>
-                    <Input required type="time" className="border-ink/22 mt-2 h-11" />
-                  </label>
-                </div>
-                <Button
-                  type="submit"
-                  className="bg-ink text-cream hover:bg-[#aa8755] hover:text-ink mt-2 h-12 w-full"
-                >
-                  Request reservation
-                </Button>
-              </form>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </ShopShell>
   );
 }
@@ -475,22 +386,32 @@ function ProductGallery({ product }: { product: ProductItem }) {
   const [dragOffset, setDragOffset] = useState(0);
   const startX = useRef<number | null>(null);
   const frameWidth = useRef(1);
+  const media = getProductMedia(product);
 
-  const goTo = (index: number) =>
-    setActiveIndex((index + product.images.length) % product.images.length);
+  const goTo = (index: number) => setActiveIndex((index + media.length) % media.length);
 
   return (
     <div className="grid gap-3 lg:grid-cols-[86px_1fr]">
       <div className="order-2 flex gap-2 overflow-x-auto lg:order-1 lg:flex-col">
-        {product.images.map((image, index) => (
+        {media.map((item, index) => (
           <button
-            key={`${product.id}-thumb-${index}`}
+            key={`${item.id}-thumb`}
             type="button"
             onClick={() => goTo(index)}
             className={`focus-ring shrink-0 border p-0.5 ${activeIndex === index ? "border-ink" : "border-transparent opacity-62 hover:opacity-100"}`}
-            aria-label={`Show ${product.name} image ${index + 1}`}
+            aria-label={`Show ${product.name} ${item.type} ${index + 1}`}
           >
-            <img src={image} alt="" className="h-22 w-17 object-cover lg:h-27 lg:w-20" />
+            {item.type === "video" ? (
+              <video
+                src={item.src}
+                muted
+                playsInline
+                preload="metadata"
+                className="h-22 w-17 object-cover lg:h-27 lg:w-20"
+              />
+            ) : (
+              <img src={item.src} alt="" className="h-22 w-17 object-cover lg:h-27 lg:w-20" />
+            )}
           </button>
         ))}
       </div>
@@ -522,43 +443,37 @@ function ProductGallery({ product }: { product: ProductItem }) {
               startX.current === null ? "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
           }}
         >
-          {product.images.map((image, index) => (
-            <img
-              key={`${product.id}-hero-${index}`}
-              src={image}
-              alt={
-                index === 0
-                  ? `${product.name} fragrance bottle`
-                  : `${product.name} presentation ${index + 1}`
-              }
-              className="aspect-[4/4.75] w-full shrink-0 cursor-grab object-cover active:cursor-grabbing"
-              draggable={false}
-            />
-          ))}
+          {media.map((item, index) =>
+            item.type === "video" ? (
+              <video
+                key={item.id}
+                src={item.src}
+                controls
+                muted
+                playsInline
+                preload="metadata"
+                className="aspect-[4/4.75] w-full shrink-0 bg-black object-cover"
+                aria-label={`${product.name} product video ${index + 1}`}
+              />
+            ) : (
+              <img
+                key={item.id}
+                src={item.src}
+                alt={
+                  index === 0
+                    ? `${product.name} fragrance bottle`
+                    : `${product.name} presentation ${index + 1}`
+                }
+                className="aspect-[4/4.75] w-full shrink-0 cursor-grab object-cover active:cursor-grabbing"
+                draggable={false}
+              />
+            ),
+          )}
         </div>
-        {product.images.length > 1 ? (
-          <>
-            <button
-              type="button"
-              onClick={() => goTo(activeIndex - 1)}
-              className="focus-ring bg-offwhite/94 absolute top-1/2 left-4 hidden h-11 w-11 -translate-y-1/2 items-center justify-center border border-black/10 opacity-0 transition-opacity group-hover/gallery:opacity-100 md:flex"
-              aria-label="Previous image"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo(activeIndex + 1)}
-              className="focus-ring bg-offwhite/94 absolute top-1/2 right-4 hidden h-11 w-11 -translate-y-1/2 items-center justify-center border border-black/10 opacity-0 transition-opacity group-hover/gallery:opacity-100 md:flex"
-              aria-label="Next image"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <span className="editorial-kicker bg-ink/82 text-cream absolute right-4 bottom-4 px-3 py-2 tabular-nums">
-              {String(activeIndex + 1).padStart(2, "0")} /{" "}
-              {String(product.images.length).padStart(2, "0")}
-            </span>
-          </>
+        {media.length > 1 ? (
+          <span className="editorial-kicker bg-ink/82 text-cream absolute right-4 bottom-4 px-3 py-2 tabular-nums">
+            {String(activeIndex + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}
+          </span>
         ) : null}
         {product.outOfStock ? (
           <span className="editorial-kicker bg-ink text-cream absolute top-4 right-4 px-3 py-2">

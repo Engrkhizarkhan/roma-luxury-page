@@ -30,6 +30,15 @@ export type ProductItem = {
     base: string[];
   };
   images: string[];
+  media?: ProductMediaItem[];
+};
+
+export type ProductMediaItem = {
+  id: string;
+  type: "image" | "video";
+  src: string;
+  name: string;
+  sizeBytes?: number;
 };
 
 export type OrderRecord = {
@@ -371,3 +380,13 @@ export const dashboardSeedPromos: PromoCode[] = [
 ];
 
 export const formatMoney = (value: number) => `PKR ${value.toLocaleString("en-PK")}`;
+
+export function getProductMedia(product: ProductItem): ProductMediaItem[] {
+  if (product.media?.length) return product.media;
+  return product.images.map((src, index) => ({
+    id: `${product.id}-image-${index + 1}`,
+    type: "image" as const,
+    src,
+    name: `${product.slug}-${index + 1}.jpg`,
+  }));
+}

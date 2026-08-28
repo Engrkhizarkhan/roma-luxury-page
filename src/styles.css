@@ -199,6 +199,28 @@
   }
 }
 
+.admin-dashboard {
+  font-size: 15px;
+}
+
+.admin-dashboard .text-xs {
+  font-size: 0.82rem;
+  line-height: 1.3rem;
+}
+
+.admin-dashboard [class*="text-[0.55rem]"],
+.admin-dashboard [class*="text-[0.58rem]"],
+.admin-dashboard [class*="text-[0.6rem]"],
+.admin-dashboard [class*="text-[0.62rem]"],
+.admin-dashboard [class*="text-[0.65rem]"] {
+  font-size: 0.72rem;
+  line-height: 1.1rem;
+}
+
+[data-sonner-toaster] {
+  z-index: 100 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

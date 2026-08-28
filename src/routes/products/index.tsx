@@ -124,7 +124,7 @@ function ProductsIndex() {
   return (
     <ShopShell>
       <section className="border-ink/10 border-b bg-cream">
-        <div className="mx-auto grid max-w-370 gap-8 px-5 py-14 sm:px-8 md:grid-cols-[1fr_auto] md:items-end md:py-18 lg:px-12">
+        {/* <div className="mx-auto grid max-w-370 gap-8 px-5 py-14 sm:px-8 md:grid-cols-[1fr_auto] md:items-end md:py-18 lg:px-12">
           <div>
             <p className="editorial-kicker text-[#8b6b3e]">The fragrance edit · 2026</p>
             <h1 className="font-display mt-5 max-w-[13ch] text-[3.25rem] leading-[0.92] font-light tracking-[-0.035em] sm:text-[4.7rem]">
@@ -135,7 +135,7 @@ function ProductsIndex() {
             Explore the complete house collection. Drag with a mouse or swipe on touch to move
             through each fragrance’s imagery.
           </p>
-        </div>
+        </div> */}
       </section>
 
       <section className="mx-auto max-w-370 px-5 pt-9 sm:px-8 lg:px-12">
@@ -457,6 +457,13 @@ function ProductResult({
           >
             {item.outOfStock ? "Unavailable" : "Quick add"}
           </Button>
+          <Link
+            to="/products/$slug"
+            params={{ slug: item.slug }}
+            className="link-underlined editorial-kicker text-ink/55 hover:text-ink mt-4 block"
+          >
+            View fragrance →
+          </Link>
         </div>
       </article>
     );
@@ -499,6 +506,13 @@ function ProductResult({
         </div>
         <p className="text-ink/48 mt-3 text-[0.65rem] tracking-[0.1em] uppercase">{item.family}</p>
         <p className="text-ink/58 mt-3 text-sm">{item.mood}</p>
+        <Link
+          to="/products/$slug"
+          params={{ slug: item.slug }}
+          className="link-underlined editorial-kicker text-ink/55 hover:text-ink mt-4 inline-block"
+        >
+          View fragrance →
+        </Link>
         <Button
           onClick={quickAdd}
           disabled={item.outOfStock}

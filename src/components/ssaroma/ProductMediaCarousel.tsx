@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRef, useState } from "react";
-import type { ProductItem } from "@/lib/catalog";
+import { getProductMedia, type ProductItem } from "@/lib/catalog";
 
 type ProductMediaCarouselProps = {
   product: ProductItem;
@@ -19,10 +18,11 @@ export function ProductMediaCarousel({
   const startX = useRef<number | null>(null);
   const width = useRef(1);
   const suppressClick = useRef(false);
-  const hasGallery = product.images.length > 1;
+  const media = getProductMedia(product);
+  const hasGallery = media.length > 1;
 
   const goTo = (index: number) => {
-    const bounded = (index + product.images.length) % product.images.length;
+    const bounded = (index + media.length) % media.length;
     setActiveIndex(bounded);
   };
 
@@ -88,51 +88,49 @@ export function ProductMediaCarousel({
               startX.current === null ? "transform 480ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
           }}
         >
-          {product.images.map((image, index) => (
-            <img
-              key={`${product.id}-${image}`}
-              src={image}
-              alt={
-                index === 0
-                  ? `${product.name} fragrance bottle`
-                  : `${product.name} presentation ${index + 1}`
-              }
-              className={`${imageClassName} w-full shrink-0 object-cover`}
-              width={1200}
-              height={1500}
-              loading={priority && index === 0 ? "eager" : "lazy"}
-              draggable={false}
-            />
-          ))}
+          {media.map((item, index) =>
+            item.type === "video" ? (
+              <video
+                key={item.id}
+                src={item.src}
+                className={`${imageClassName} w-full shrink-0 object-cover`}
+                muted
+                playsInline
+                loop
+                autoPlay={activeIndex === index}
+                preload="metadata"
+                aria-label={`${product.name} product video ${index + 1}`}
+                draggable={false}
+              />
+            ) : (
+              <img
+                key={item.id}
+                src={item.src}
+                alt={
+                  index === 0
+                    ? `${product.name} fragrance bottle`
+                    : `${product.name} presentation ${index + 1}`
+                }
+                className={`${imageClassName} w-full shrink-0 object-cover`}
+                width={1200}
+                height={1500}
+                loading={priority && index === 0 ? "eager" : "lazy"}
+                draggable={false}
+              />
+            ),
+          )}
         </div>
       </Link>
 
       {hasGallery ? (
         <>
-          <button
-            type="button"
-            aria-label={`Previous image of ${product.name}`}
-            onClick={() => goTo(activeIndex - 1)}
-            className="focus-ring bg-offwhite/94 text-ink absolute top-1/2 left-3 hidden h-9 w-9 -translate-y-1/2 items-center justify-center border border-black/10 opacity-0 transition-opacity group-hover/media:opacity-100 md:flex"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label={`Next image of ${product.name}`}
-            onClick={() => goTo(activeIndex + 1)}
-            className="focus-ring bg-offwhite/94 text-ink absolute top-1/2 right-3 hidden h-9 w-9 -translate-y-1/2 items-center justify-center border border-black/10 opacity-0 transition-opacity group-hover/media:opacity-100 md:flex"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </button>
-
           <div
             className="absolute right-3 bottom-3 flex items-center gap-1.5 bg-ink/84 px-2.5 py-2"
-            aria-label={`Image ${activeIndex + 1} of ${product.images.length}`}
+            aria-label={`Media ${activeIndex + 1} of ${media.length}`}
           >
-            {product.images.map((_, index) => (
+            {media.map((item, index) => (
               <button
-                key={`${product.id}-dot-${index}`}
+                key={`${item.id}-dot`}
                 type="button"
                 aria-label={`Show image ${index + 1}`}
                 onClick={() => goTo(index)}

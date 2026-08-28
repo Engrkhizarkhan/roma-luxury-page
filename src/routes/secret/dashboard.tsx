@@ -1,31 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Archive,
   ArrowDownRight,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  Bell,
   Box,
   ChartNoAxesCombined,
   Check,
-  ChevronDown,
   CircleDollarSign,
   Clock3,
   Copy,
   Ellipsis,
   Eye,
-  Gift,
+  Film,
   Grid2X2,
   ImagePlus,
+  Image as ImageIcon,
   LayoutDashboard,
   List,
   LockKeyhole,
   LogOut,
   Menu,
   PackageCheck,
-  PackageOpen,
-  PanelLeftClose,
   Pencil,
   Plus,
   RotateCcw,
@@ -35,7 +31,7 @@ import {
   Tag,
   Trash2,
   Truck,
-  Users,
+  UploadCloud,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -50,7 +46,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,8 +78,10 @@ import {
   dashboardSeedProducts,
   dashboardSeedPromos,
   formatMoney,
+  getProductMedia,
   products,
   type OrderRecord,
+  type ProductMediaItem,
   type ProductItem,
   type PromoCode,
 } from "@/lib/catalog";
@@ -119,7 +116,7 @@ type ProductDraft = {
   sizeMl: string;
   price: string;
   outOfStock: boolean;
-  images: string[];
+  media: ProductMediaItem[];
 };
 
 type PromoDraft = {
@@ -208,13 +205,30 @@ const allSeedOrders = [...dashboardSeedOrders, ...extraOrders].sort(
 );
 
 const salesData = [
-  { day: "22 Aug", revenue: 48600, orders: 3 },
-  { day: "23 Aug", revenue: 72400, orders: 4 },
-  { day: "24 Aug", revenue: 53900, orders: 3 },
-  { day: "25 Aug", revenue: 81700, orders: 5 },
-  { day: "26 Aug", revenue: 65400, orders: 4 },
-  { day: "27 Aug", revenue: 93600, orders: 5 },
-  { day: "28 Aug", revenue: 70400, orders: 4 },
+  { day: "22 Aug", revenue: 32600, orders: 2 },
+  { day: "23 Aug", revenue: 49400, orders: 3 },
+  { day: "24 Aug", revenue: 38900, orders: 2 },
+  { day: "25 Aug", revenue: 45700, orders: 3 },
+  { day: "26 Aug", revenue: 57400, orders: 3 },
+  { day: "27 Aug", revenue: 62600, orders: 4 },
+  { day: "28 Aug", revenue: 41400, orders: 2 },
+];
+
+const monthlyRevenueData = [
+  { month: "Mar", revenue: 920000, orders: 43 },
+  { month: "Apr", revenue: 1045000, orders: 49 },
+  { month: "May", revenue: 1138000, orders: 52 },
+  { month: "Jun", revenue: 1264000, orders: 58 },
+  { month: "Jul", revenue: 1372000, orders: 63 },
+  { month: "Aug", revenue: 1486500, orders: 68 },
+];
+
+const citySalesData = [
+  { city: "Peshawar", revenue: 462000 },
+  { city: "Islamabad", revenue: 338500 },
+  { city: "Lahore", revenue: 294000 },
+  { city: "Karachi", revenue: 241000 },
+  { city: "Other", revenue: 151000 },
 ];
 
 const emptyProductDraft: ProductDraft = {
@@ -228,7 +242,7 @@ const emptyProductDraft: ProductDraft = {
   sizeMl: "",
   price: "",
   outOfStock: false,
-  images: [],
+  media: [],
 };
 
 const emptyPromoDraft: PromoDraft = {
@@ -266,6 +280,7 @@ function SecretDashboard() {
   const [productDraft, setProductDraft] = useState<ProductDraft>(emptyProductDraft);
   const [promoEditorOpen, setPromoEditorOpen] = useState(false);
   const [promoDraft, setPromoDraft] = useState<PromoDraft>(emptyPromoDraft);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     setIsAuthenticated(window.sessionStorage.getItem(AUTH_KEY) === "granted");
@@ -291,18 +306,23 @@ function SecretDashboard() {
     );
   }, [orders, productRows, promos, ready]);
 
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
   const metrics = useMemo(() => {
-    const activeOrders = orders.filter((order) => order.status !== "cancelled");
-    const revenue = activeOrders.reduce((sum, order) => sum + order.total, 0);
-    const delivered = orders.filter((order) => order.status === "delivered").length;
     const dispatchQueue = orders.filter((order) => order.status === "processing").length;
     return {
-      revenue,
-      orderCount: activeOrders.length,
-      averageOrder: activeOrders.length > 0 ? Math.round(revenue / activeOrders.length) : 0,
-      delivered,
+      revenue: 1486500,
+      orderCount: 68,
+      averageOrder: 21860,
+      delivered: 59,
       dispatchQueue,
-      customers: new Set(orders.map((order) => order.customer)).size,
+      customers: 61,
+      conversionRate: 3.8,
+      returningRate: 41,
     };
   }, [orders]);
 
@@ -329,11 +349,11 @@ function SecretDashboard() {
       current.map((order) => (order.id === id ? { ...order, status } : order)),
     );
     setSelectedOrder((current) => (current?.id === id ? { ...current, status } : current));
-    toast.success(`${id} moved to ${statusLabel(status).toLowerCase()}`);
+    setNotice(`${id} moved to ${statusLabel(status).toLowerCase()}.`);
   };
 
   const openNewProduct = () => {
-    setProductDraft({ ...emptyProductDraft, images: [] });
+    setProductDraft({ ...emptyProductDraft, media: [] });
     setProductEditorOpen(true);
   };
 
@@ -349,7 +369,7 @@ function SecretDashboard() {
       sizeMl: String(product.sizeMl),
       price: String(product.price),
       outOfStock: product.outOfStock,
-      images: [...product.images],
+      media: getProductMedia(product),
     });
     setProductEditorOpen(true);
   };
@@ -364,14 +384,18 @@ function SecretDashboard() {
       price <= 0 ||
       sizeMl <= 0
     ) {
-      toast.error("Complete the required product details");
+      setNotice("Complete the required product details before saving.");
       return;
     }
 
     const fallback = dashboardSeedProducts[0];
     if (!fallback) return;
-    const normalizedImages = productDraft.images.filter(Boolean);
-    const images = normalizedImages.length > 0 ? normalizedImages : fallback.images;
+    const media = productDraft.media.filter((item) => item.src);
+    const normalizedMedia = media.length > 0 ? media : getProductMedia(fallback);
+    const imageSources = normalizedMedia
+      .filter((item) => item.type === "image")
+      .map((item) => item.src);
+    const images = imageSources.length > 0 ? imageSources : fallback.images;
 
     if (productDraft.id) {
       setProductRows((current) =>
@@ -390,11 +414,12 @@ function SecretDashboard() {
                 compareAt: Math.max(product.compareAt, Math.round(price * 1.12)),
                 outOfStock: productDraft.outOfStock,
                 images,
+                media: normalizedMedia,
               }
             : product,
         ),
       );
-      toast.success(`${productDraft.name} updated`);
+      setNotice(`${productDraft.name} was updated.`);
     } else {
       const next: ProductItem = {
         ...fallback,
@@ -410,17 +435,18 @@ function SecretDashboard() {
         compareAt: Math.round(price * 1.12),
         outOfStock: productDraft.outOfStock,
         images,
+        media: normalizedMedia,
         featured: false,
       };
       setProductRows((current) => [next, ...current]);
-      toast.success(`${productDraft.name} added to the catalog`);
+      setNotice(`${productDraft.name} was added to the catalog.`);
     }
     setProductEditorOpen(false);
   };
 
   const deleteProduct = (product: ProductItem) => {
     setProductRows((current) => current.filter((entry) => entry.id !== product.id));
-    toast.success(`${product.name} removed from the demo catalog`);
+    setNotice(`${product.name} was removed from the catalog.`);
   };
 
   const savePromo = () => {
@@ -433,7 +459,7 @@ function SecretDashboard() {
       !promoDraft.validFrom ||
       !promoDraft.validTo
     ) {
-      toast.error("Complete the promotion details");
+      setNotice("Complete the promotion details before saving.");
       return;
     }
     const promo: PromoCode = {
@@ -449,7 +475,7 @@ function SecretDashboard() {
     setPromos((current) => [promo, ...current]);
     setPromoEditorOpen(false);
     setPromoDraft(emptyPromoDraft);
-    toast.success(`${promo.code} is now active`);
+    setNotice(`${promo.code} is now active.`);
   };
 
   const resetDemo = () => {
@@ -457,7 +483,7 @@ function SecretDashboard() {
     setOrders(allSeedOrders);
     setPromos(dashboardSeedPromos);
     window.localStorage.removeItem(DATA_KEY);
-    toast.success("Demo data restored");
+    setNotice("Demo data was restored.");
   };
 
   if (!ready) {
@@ -490,7 +516,8 @@ function SecretDashboard() {
   };
 
   return (
-    <div className="bg-[#f1efe9] text-[#171713] min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
+    <div className="admin-dashboard bg-[#f1efe9] text-[#171713] min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+      {notice ? <DashboardNotice message={notice} onClose={() => setNotice(null)} /> : null}
       <aside className="bg-[#171713] text-[#f3efe5] sticky top-0 hidden h-screen flex-col border-r border-white/8 lg:flex">
         <DashboardBrand />
         <DashboardNav value={view} onChange={setView} />
@@ -576,14 +603,6 @@ function SecretDashboard() {
             >
               <Store className="h-3.5 w-3.5" /> View store
             </Link>
-            <button
-              type="button"
-              className="focus-ring border-black/12 relative flex h-9 w-9 items-center justify-center border"
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="bg-[#9a3d2e] absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full" />
-            </button>
           </div>
         </header>
 
@@ -596,7 +615,7 @@ function SecretDashboard() {
               <p className="mt-3 text-sm text-black/48">{pageTitle[view][1]}</p>
             </div>
             {view === "overview" ? (
-              <Select defaultValue="7-days">
+              <Select defaultValue="30-days">
                 <SelectTrigger className="border-black/15 h-9 w-40 bg-transparent text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -644,6 +663,7 @@ function SecretDashboard() {
               promos={promos}
               setPromos={setPromos}
               openNew={() => setPromoEditorOpen(true)}
+              notify={setNotice}
             />
           ) : null}
         </main>
@@ -655,6 +675,7 @@ function SecretDashboard() {
           if (!open) setSelectedOrder(null);
         }}
         updateStatus={updateOrderStatus}
+        notify={setNotice}
       />
       <ProductEditor
         open={productEditorOpen}
@@ -789,6 +810,28 @@ function DashboardBrand() {
   );
 }
 
+function DashboardNotice({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div
+      role="status"
+      className="border-black/15 bg-[#f7f5ef] fixed top-5 right-5 z-[80] flex max-w-sm items-start gap-3 border px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.14)]"
+    >
+      <span className="bg-[#47705a] mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white">
+        <Check className="h-3 w-3" />
+      </span>
+      <p className="pr-3 text-sm leading-5">{message}</p>
+      <button
+        type="button"
+        onClick={onClose}
+        className="text-black/40 hover:text-black"
+        aria-label="Dismiss notification"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function DashboardNav({
   value,
   onChange,
@@ -828,7 +871,19 @@ type Metrics = {
   delivered: number;
   dispatchQueue: number;
   customers: number;
+  conversionRate: number;
+  returningRate: number;
 };
+
+function BusinessPulse({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="border-black/10 border-b p-5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0">
+      <p className="text-xs text-black/45">{label}</p>
+      <p className="mt-3 text-2xl font-medium tabular-nums">{value}</p>
+      <p className="mt-1 text-[0.65rem] text-black/38">{note}</p>
+    </div>
+  );
+}
 
 function Overview({
   metrics,
@@ -852,7 +907,7 @@ function Overview({
     <div className="space-y-6">
       <div className="grid border border-black/10 bg-[#f7f5ef] sm:grid-cols-2 xl:grid-cols-4">
         <Metric
-          label="Net revenue"
+          label="Monthly revenue"
           value={formatMoney(metrics.revenue)}
           trend="12.8%"
           positive
@@ -875,10 +930,24 @@ function Overview({
         <Metric
           label="Delivered"
           value={String(metrics.delivered)}
-          trend="3.2%"
-          positive={false}
+          trend="10.4%"
+          positive
           icon={PackageCheck}
         />
+      </div>
+
+      <div className="grid border border-black/10 bg-[#f7f5ef] sm:grid-cols-3">
+        <BusinessPulse
+          label="Store conversion"
+          value={`${metrics.conversionRate}%`}
+          note="from product view to order"
+        />
+        <BusinessPulse
+          label="Returning clients"
+          value={`${metrics.returningRate}%`}
+          note="of this month’s buyers"
+        />
+        <BusinessPulse label="COD collection" value="97.6%" note="successful delivery payment" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.65fr_0.85fr]">
@@ -993,6 +1062,129 @@ function Overview({
           </div>
         </section>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+        <section className="border border-black/10 bg-[#f7f5ef] p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Six-month growth</p>
+              <p className="mt-1 text-xs text-black/42">
+                Revenue has crossed PKR 14 lakh this month
+              </p>
+            </div>
+            <p className="text-sm font-medium text-[#47705a]">+61.6% since March</p>
+          </div>
+          <div className="mt-7 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyRevenueData} margin={{ left: -4, right: 8, top: 6 }}>
+                <CartesianGrid vertical={false} stroke="#17171318" />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#17171377", fontSize: 11 }}
+                  dy={8}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#17171366", fontSize: 10 }}
+                  tickFormatter={(value: number) => `${(value / 100000).toFixed(0)}L`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 0,
+                    border: "1px solid #17171322",
+                    background: "#f7f5ef",
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number) => [formatMoney(value), "Revenue"]}
+                />
+                <Bar dataKey="revenue" fill="#aa8755" radius={0} maxBarSize={48} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="border border-black/10 bg-[#f7f5ef] p-5 sm:p-6">
+          <div>
+            <p className="text-sm font-medium">Revenue by city</p>
+            <p className="mt-1 text-xs text-black/42">August demand across Pakistan</p>
+          </div>
+          <div className="mt-7 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={citySalesData} layout="vertical" margin={{ left: 6, right: 16 }}>
+                <CartesianGrid horizontal={false} stroke="#17171314" />
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="city"
+                  axisLine={false}
+                  tickLine={false}
+                  width={72}
+                  tick={{ fill: "#17171399", fontSize: 11 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 0,
+                    border: "1px solid #17171322",
+                    background: "#f7f5ef",
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number) => [formatMoney(value), "Revenue"]}
+                />
+                <Bar dataKey="revenue" fill="#1b1b17" radius={0} barSize={16} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+
+      <section className="overflow-hidden border border-black/10 bg-[#f7f5ef]">
+        <SectionHeader
+          title="Product performance"
+          subtitle="Storefront rating, reviews and August sales use the same catalog records"
+        />
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-black/8">
+                <TableHead>Fragrance</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Reviews</TableHead>
+                <TableHead>Units sold</TableHead>
+                <TableHead className="text-right">Revenue</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {catalog.slice(0, 5).map((product, index) => {
+                const units = [18, 15, 13, 11, 9][index] ?? 7;
+                return (
+                  <TableRow key={product.id} className="border-black/8">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <img src={product.images[0]} alt="" className="h-11 w-9 object-cover" />
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="mt-1 text-[0.62rem] text-black/40">
+                            {product.collection} · {product.concentration}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{product.rating.toFixed(1)} / 5</TableCell>
+                    <TableCell>{product.reviewCount.toLocaleString("en-PK")}</TableCell>
+                    <TableCell>{units}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatMoney(product.price * units)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
         <section className="overflow-hidden border border-black/10 bg-[#f7f5ef]">
@@ -1208,8 +1400,12 @@ function OrdersView({
                   <TableCell className="text-black/52">{formatShortDate(order.placedAt)}</TableCell>
                   <TableCell>{order.items}</TableCell>
                   <TableCell>
-                    <span className="text-[#47705a]">Paid</span>
-                    <p className="mt-1 text-[0.6rem] text-black/35">Card</p>
+                    <span
+                      className={order.status === "delivered" ? "text-[#47705a]" : "text-[#9a773f]"}
+                    >
+                      {order.status === "delivered" ? "Collected" : "Pending"}
+                    </span>
+                    <p className="mt-1 text-[0.6rem] text-black/35">Cash on delivery</p>
                   </TableCell>
                   <TableCell>
                     <Select
@@ -1416,7 +1612,7 @@ function CatalogViewPanel({
         />
         <CatalogMetric
           label="Media assets"
-          value={catalog.reduce((sum, product) => sum + product.images.length, 0)}
+          value={catalog.reduce((sum, product) => sum + getProductMedia(product).length, 0)}
         />
       </div>
       <section className="overflow-hidden border border-black/10 bg-[#f7f5ef]">
@@ -1478,6 +1674,7 @@ function CatalogViewPanel({
                   <TableHead>Fragrance</TableHead>
                   <TableHead>Media</TableHead>
                   <TableHead>Collection</TableHead>
+                  <TableHead>Client response</TableHead>
                   <TableHead>Inventory</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
@@ -1486,6 +1683,7 @@ function CatalogViewPanel({
               </TableHeader>
               <TableBody>
                 {filtered.map((product, index) => {
+                  const media = getProductMedia(product);
                   const stock = product.outOfStock
                     ? 0
                     : ([18, 7, 24, 5, 31, 9, 14, 4, 21][index % 9] ?? 12);
@@ -1504,22 +1702,37 @@ function CatalogViewPanel({
                       </TableCell>
                       <TableCell>
                         <div className="flex -space-x-2">
-                          {product.images.slice(0, 3).map((image, imageIndex) => (
-                            <img
-                              key={`${image}-${imageIndex}`}
-                              src={image}
-                              alt=""
-                              className="h-8 w-8 border-2 border-[#f7f5ef] object-cover"
-                            />
-                          ))}
-                          {product.images.length > 3 ? (
+                          {media.slice(0, 3).map((item) =>
+                            item.type === "video" ? (
+                              <span
+                                key={item.id}
+                                className="bg-black text-white flex h-8 w-8 items-center justify-center border-2 border-[#f7f5ef]"
+                              >
+                                <Film className="h-3.5 w-3.5" />
+                              </span>
+                            ) : (
+                              <img
+                                key={item.id}
+                                src={item.src}
+                                alt=""
+                                className="h-8 w-8 border-2 border-[#f7f5ef] object-cover"
+                              />
+                            ),
+                          )}
+                          {media.length > 3 ? (
                             <span className="bg-[#e7e3da] flex h-8 w-8 items-center justify-center border-2 border-[#f7f5ef] text-[0.58rem]">
-                              +{product.images.length - 3}
+                              +{media.length - 3}
                             </span>
                           ) : null}
                         </div>
                       </TableCell>
                       <TableCell>{product.collection}</TableCell>
+                      <TableCell>
+                        <p className="font-medium">{product.rating.toFixed(1)} / 5</p>
+                        <p className="mt-1 text-[0.62rem] text-black/40">
+                          {product.reviewCount} reviews
+                        </p>
+                      </TableCell>
                       <TableCell>
                         <p className={stock <= 5 ? "text-[#9a3d2e]" : ""}>{stock} units</p>
                         <p className="mt-1 text-[0.6rem] text-black/35">
@@ -1563,46 +1776,53 @@ function CatalogViewPanel({
           </div>
         ) : (
           <div className="grid gap-px bg-black/10 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((product) => (
-              <article key={product.id} className="bg-[#f7f5ef] p-4">
-                <div className="relative">
-                  <img
-                    src={product.images[0]}
-                    alt={`${product.name} bottle`}
-                    className="aspect-[4/3.5] w-full object-cover"
-                  />
-                  <span className="bg-black/72 text-white absolute right-2 bottom-2 px-2 py-1 text-[0.58rem]">
-                    {product.images.length} images
-                  </span>
-                </div>
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-2xl">{product.name}</p>
-                    <p className="mt-2 text-[0.6rem] tracking-wider text-black/42 uppercase">
-                      {product.collection} · {product.concentration}
-                    </p>
+            {filtered.map((product) => {
+              const media = getProductMedia(product);
+              const videoCount = media.filter((item) => item.type === "video").length;
+              return (
+                <article key={product.id} className="bg-[#f7f5ef] p-4">
+                  <div className="relative">
+                    <img
+                      src={product.images[0]}
+                      alt={`${product.name} bottle`}
+                      className="aspect-[4/3.5] w-full object-cover"
+                    />
+                    <span className="bg-black/72 text-white absolute right-2 bottom-2 px-2 py-1 text-[0.58rem]">
+                      {media.length} media · {videoCount} video
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => editProduct(product)}
-                    className="border-black/12 flex h-8 w-8 items-center justify-center border"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-black/8 pt-3 text-xs">
-                  <span>{formatMoney(product.price)}</span>
-                  <span className={product.outOfStock ? "text-[#9a3d2e]" : "text-[#47705a]"}>
-                    {product.outOfStock ? "Unavailable" : "Published"}
-                  </span>
-                </div>
-              </article>
-            ))}
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-2xl">{product.name}</p>
+                      <p className="mt-2 text-[0.6rem] tracking-wider text-black/42 uppercase">
+                        {product.collection} · {product.concentration}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => editProduct(product)}
+                      className="border-black/12 flex h-8 w-8 items-center justify-center border"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-black/8 pt-3 text-xs">
+                    <span>
+                      {formatMoney(product.price)} · {product.rating.toFixed(1)} (
+                      {product.reviewCount})
+                    </span>
+                    <span className={product.outOfStock ? "text-[#9a3d2e]" : "text-[#47705a]"}>
+                      {product.outOfStock ? "Unavailable" : "Published"}
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
         <div className="border-t border-black/10 px-4 py-3 text-xs text-black/42">
           {filtered.length} fragrances ·{" "}
-          {filtered.reduce((sum, product) => sum + product.images.length, 0)} media assets
+          {filtered.reduce((sum, product) => sum + getProductMedia(product).length, 0)} media assets
         </div>
       </section>
     </div>
@@ -1622,10 +1842,12 @@ function PromotionsView({
   promos,
   setPromos,
   openNew,
+  notify,
 }: {
   promos: PromoCode[];
   setPromos: React.Dispatch<React.SetStateAction<PromoCode[]>>;
   openNew: () => void;
+  notify: (message: string) => void;
 }) {
   const toggle = (id: string) =>
     setPromos((current) =>
@@ -1685,7 +1907,7 @@ function PromotionsView({
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(promo.code);
-                          toast.success("Code copied");
+                          notify(`${promo.code} copied.`);
                         }}
                         className="text-black/32"
                       >
@@ -1748,10 +1970,12 @@ function OrderDetail({
   order,
   onOpenChange,
   updateStatus,
+  notify,
 }: {
   order: OrderRecord | null;
   onOpenChange: (open: boolean) => void;
   updateStatus: (id: string, status: OrderStatus) => void;
+  notify: (message: string) => void;
 }) {
   if (!order) return null;
   const index = Number(order.id.slice(-2)) % products.length;
@@ -1893,7 +2117,7 @@ function OrderDetail({
               <span>Complimentary</span>
             </div>
             <div className="mt-4 flex justify-between border-t border-black/10 pt-4">
-              <span className="text-sm font-medium">Total paid</span>
+              <span className="text-sm font-medium">Due on delivery</span>
               <span className="text-lg font-medium tabular-nums">{formatMoney(order.total)}</span>
             </div>
           </div>
@@ -1901,13 +2125,13 @@ function OrderDetail({
             <Button
               variant="outline"
               className="border-black/15 bg-transparent"
-              onClick={() => toast.success("Shipping label prepared")}
+              onClick={() => notify("Shipping label is ready to print.")}
             >
               Print shipping label
             </Button>
             <Button
               className="bg-[#171713] text-white hover:bg-[#aa8755] hover:text-black"
-              onClick={() => toast.success("Client notification sent")}
+              onClick={() => notify("Order update sent to the client.")}
             >
               Notify client
             </Button>
@@ -1931,25 +2155,60 @@ function ProductEditor({
   setDraft: React.Dispatch<React.SetStateAction<ProductDraft>>;
   save: () => void;
 }) {
-  const [newImage, setNewImage] = useState("");
+  const [mediaError, setMediaError] = useState("");
   const update = <K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
-  const addImage = () => {
-    const value = newImage.trim();
-    if (!value) return;
-    update("images", [...draft.images, value]);
-    setNewImage("");
+
+  const addFiles = (files: File[]) => {
+    const accepted: ProductMediaItem[] = [];
+    let rejected = 0;
+
+    files.forEach((file, index) => {
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      const withinLimit = isImage ? file.size <= 8 * 1024 * 1024 : file.size <= 40 * 1024 * 1024;
+      if ((!isImage && !isVideo) || !withinLimit) {
+        rejected += 1;
+        return;
+      }
+      accepted.push({
+        id: `upload-${Date.now()}-${index}`,
+        type: isVideo ? "video" : "image",
+        src: URL.createObjectURL(file),
+        name: file.name,
+        sizeBytes: file.size,
+      });
+    });
+
+    if (accepted.length) {
+      setDraft((current) => ({ ...current, media: [...current.media, ...accepted] }));
+    }
+    setMediaError(
+      rejected > 0
+        ? `${rejected} file${rejected === 1 ? " was" : "s were"} skipped. Use images up to 8 MB or videos up to 40 MB.`
+        : "",
+    );
   };
-  const moveImage = (index: number, direction: -1 | 1) => {
+
+  const moveMedia = (index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= draft.images.length) return;
-    const next = [...draft.images];
-    const currentImage = next[index];
-    const targetImage = next[nextIndex];
-    if (!currentImage || !targetImage) return;
-    next[index] = targetImage;
-    next[nextIndex] = currentImage;
-    update("images", next);
+    if (nextIndex < 0 || nextIndex >= draft.media.length) return;
+    const next = [...draft.media];
+    const currentItem = next[index];
+    const targetItem = next[nextIndex];
+    if (!currentItem || !targetItem) return;
+    next[index] = targetItem;
+    next[nextIndex] = currentItem;
+    update("media", next);
+  };
+
+  const removeMedia = (index: number) => {
+    const item = draft.media[index];
+    if (item?.src.startsWith("blob:")) URL.revokeObjectURL(item.src);
+    update(
+      "media",
+      draft.media.filter((_, mediaIndex) => mediaIndex !== index),
+    );
   };
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1959,7 +2218,7 @@ function ProductEditor({
             {draft.id ? "Edit fragrance" : "Add fragrance"}
           </SheetTitle>
           <SheetDescription>
-            Manage the storefront record and its complete image gallery.
+            Manage the storefront record and upload its image and video media.
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-7 px-6 py-6">
@@ -2076,66 +2335,106 @@ function ProductEditor({
           <section className="border-t border-black/10 pt-6">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-medium">Product gallery</p>
+                <p className="text-xs font-medium">Product media</p>
                 <p className="mt-1 text-[0.65rem] text-black/42">
-                  The first image is used as the primary storefront image.
+                  Arrange images and videos in the order clients should see them.
                 </p>
               </div>
-              <span className="text-[0.62rem] text-black/38">{draft.images.length} images</span>
+              <span className="text-[0.62rem] text-black/38">
+                {draft.media.length} files ·{" "}
+                {draft.media.filter((item) => item.type === "video").length} videos
+              </span>
             </div>
-            {draft.images.length > 0 ? (
+
+            <label
+              className="border-black/18 hover:border-[#8b6b3e] mt-4 flex cursor-pointer flex-col items-center justify-center border border-dashed px-5 py-8 text-center transition-colors"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                addFiles(Array.from(event.dataTransfer.files));
+              }}
+            >
+              <input
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
+                className="sr-only"
+                onChange={(event) => {
+                  addFiles(Array.from(event.target.files ?? []));
+                  event.target.value = "";
+                }}
+              />
+              <UploadCloud className="h-6 w-6 text-black/32" />
+              <p className="mt-3 text-sm font-medium">Choose files or drag them here</p>
+              <p className="mt-1 text-[0.65rem] text-black/42">
+                JPG, PNG, WebP, AVIF up to 8 MB · MP4, WebM or MOV up to 40 MB
+              </p>
+            </label>
+            {mediaError ? <p className="mt-2 text-xs text-[#9a3d2e]">{mediaError}</p> : null}
+
+            {draft.media.length > 0 ? (
               <div className="mt-4 space-y-2">
-                {draft.images.map((image, index) => (
+                {draft.media.map((item, index) => (
                   <div
-                    key={`${image}-${index}`}
+                    key={item.id}
                     className="grid grid-cols-[54px_1fr_auto] items-center gap-3 border border-black/10 bg-black/[0.015] p-2"
                   >
                     <div className="relative">
-                      <img src={image} alt="" className="h-14 w-13 object-cover" />
+                      {item.type === "video" ? (
+                        <video
+                          src={item.src}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="h-14 w-13 bg-black object-cover"
+                        />
+                      ) : (
+                        <img src={item.src} alt="" className="h-14 w-13 object-cover" />
+                      )}
                       {index === 0 ? (
                         <span className="bg-black/75 text-white absolute right-0 bottom-0 left-0 py-0.5 text-center text-[0.48rem] uppercase">
                           Primary
                         </span>
                       ) : null}
                     </div>
-                    <Input
-                      value={image}
-                      onChange={(event) =>
-                        update(
-                          "images",
-                          draft.images.map((entry, entryIndex) =>
-                            entryIndex === index ? event.target.value : entry,
-                          ),
-                        )
-                      }
-                      className="border-black/12 h-9 text-[0.65rem]"
-                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium">{item.name}</p>
+                      <p className="mt-1 flex items-center gap-1.5 text-[0.6rem] text-black/40">
+                        {item.type === "video" ? (
+                          <Film className="h-3 w-3" />
+                        ) : (
+                          <ImageIcon className="h-3 w-3" />
+                        )}
+                        {item.type === "video" ? "Video" : "Image"}
+                        {item.sizeBytes
+                          ? ` · ${formatFileSize(item.sizeBytes)}`
+                          : " · Existing media"}
+                      </p>
+                    </div>
                     <div className="flex">
                       <button
                         type="button"
                         disabled={index === 0}
-                        onClick={() => moveImage(index, -1)}
+                        onClick={() => moveMedia(index, -1)}
                         className="border-black/10 disabled:text-black/15 flex h-8 w-7 items-center justify-center border"
+                        aria-label={`Move ${item.name} earlier`}
                       >
                         <ArrowLeft className="h-3 w-3 rotate-90" />
                       </button>
                       <button
                         type="button"
-                        disabled={index === draft.images.length - 1}
-                        onClick={() => moveImage(index, 1)}
+                        disabled={index === draft.media.length - 1}
+                        onClick={() => moveMedia(index, 1)}
                         className="border-black/10 disabled:text-black/15 flex h-8 w-7 items-center justify-center border"
+                        aria-label={`Move ${item.name} later`}
                       >
                         <ArrowRight className="h-3 w-3 rotate-90" />
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          update(
-                            "images",
-                            draft.images.filter((_, imageIndex) => imageIndex !== index),
-                          )
-                        }
+                        onClick={() => removeMedia(index)}
                         className="border-black/10 flex h-8 w-7 items-center justify-center border hover:text-[#9a3d2e]"
+                        aria-label={`Remove ${item.name}`}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -2146,31 +2445,9 @@ function ProductEditor({
             ) : (
               <div className="border border-dashed border-black/15 mt-4 py-8 text-center">
                 <ImagePlus className="mx-auto h-5 w-5 text-black/25" />
-                <p className="mt-2 text-xs text-black/38">No gallery images yet</p>
+                <p className="mt-2 text-xs text-black/38">No media uploaded yet</p>
               </div>
             )}
-            <div className="mt-3 flex gap-2">
-              <Input
-                value={newImage}
-                onChange={(event) => setNewImage(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addImage();
-                  }
-                }}
-                placeholder="Paste an image URL"
-                className="border-black/15 h-10"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addImage}
-                className="border-black/15 bg-transparent"
-              >
-                <Plus className="mr-2 h-3.5 w-3.5" /> Add
-              </Button>
-            </div>
           </section>
           <div className="sticky bottom-0 -mx-6 flex justify-end gap-2 border-t border-black/10 bg-[#f7f5ef] px-6 pt-5 pb-1">
             <Button
@@ -2366,4 +2643,9 @@ function slugify(value: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function formatFileSize(value: number) {
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
