@@ -1,7 +1,9 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
 import { Menu, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetClose,
@@ -12,11 +14,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { CART_EVENT, clearCart, readCart, updateCartLine, type CartLine } from "@/lib/cart";
-import { formatMoney, products } from "@/lib/catalog";
-import { LINKS, SHOP } from "@/lib/ssaroma";
+import { formatMoney, type ProductItem } from "@/lib/catalog";
+import type { SiteSettings } from "@/types/domain";
 
 type ShellProps = {
   children: ReactNode;
+  products: ProductItem[];
+  settings: SiteSettings;
 };
 
 const menuItems = [
@@ -24,7 +28,7 @@ const menuItems = [
   { label: "Fragrances", to: "/products" as const },
 ] as const;
 
-export function ShopShell({ children }: ShellProps) {
+export function ShopShell({ children, products, settings }: ShellProps) {
   const [cart, setCart] = useState<CartLine[]>([]);
 
   useEffect(() => {
@@ -45,7 +49,7 @@ export function ShopShell({ children }: ShellProps) {
         const product = products.find((entry) => entry.id === line.productId);
         return sum + (product?.price ?? 0) * line.quantity;
       }, 0),
-    [cart],
+    [cart, products],
   );
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -64,8 +68,7 @@ export function ShopShell({ children }: ShellProps) {
             {menuItems.map((item) => (
               <Link
                 key={item.label}
-                to={item.to}
-                activeProps={{ className: "text-gold" }}
+                href={item.to}
                 className="link-rule editorial-kicker text-cream/68 hover:text-cream transition-colors duration-300"
               >
                 {item.label}
@@ -85,7 +88,9 @@ export function ShopShell({ children }: ShellProps) {
             </SheetTrigger>
             <SheetContent side="left" className="bg-ink text-cream border-cream/15 w-[88%] p-0">
               <SheetHeader className="border-cream/12 border-b px-6 py-6 text-left">
-                <SheetTitle className="wordmark text-cream text-base">SSAROMA</SheetTitle>
+                <SheetTitle className="wordmark text-cream text-base">
+                  {settings.brandName}
+                </SheetTitle>
                 <SheetDescription className="text-cream/48 text-xs">
                   Fragrance house · Peshawar
                 </SheetDescription>
@@ -94,7 +99,7 @@ export function ShopShell({ children }: ShellProps) {
                 {menuItems.map((item, index) => (
                   <SheetClose asChild key={item.label}>
                     <Link
-                      to={item.to}
+                      href={item.to}
                       className="font-display border-cream/12 border-b py-5 text-3xl font-light"
                     >
                       <span className="text-gold mr-4 font-sans text-[0.62rem] tracking-widest">
@@ -109,16 +114,15 @@ export function ShopShell({ children }: ShellProps) {
           </Sheet>
 
           <Link
-            to="/"
+            href="/"
             className="wordmark text-cream focus-ring justify-self-center text-[0.98rem] leading-none sm:text-[1.05rem]"
           >
-            SSAROMA
+            {settings.brandName}
           </Link>
 
           <div className="flex items-center justify-self-end gap-4 sm:gap-5">
             <Link
-              to="/products"
-              search={{}}
+              href="/products"
               className="focus-ring text-cream/70 hover:text-cream hidden transition-colors sm:block"
               aria-label="Search fragrances"
             >
@@ -159,7 +163,7 @@ export function ShopShell({ children }: ShellProps) {
                     </p>
                     <SheetClose asChild>
                       <Link
-                        to="/products"
+                        href="/products"
                         className="editorial-kicker bg-ink text-cream mt-7 px-6 py-4"
                       >
                         Explore fragrances
@@ -177,11 +181,17 @@ export function ShopShell({ children }: ShellProps) {
                             key={line.productId}
                             className="border-ink/12 grid grid-cols-[76px_1fr] gap-4 border-b py-5"
                           >
-                            <img
-                              src={product.images[0]}
-                              alt=""
-                              className="h-24 w-[76px] object-cover"
-                            />
+                            {product.images[0] ? (
+                              <Image
+                                src={product.images[0]}
+                                alt=""
+                                width={76}
+                                height={96}
+                                className="h-24 w-[76px] object-cover"
+                              />
+                            ) : (
+                              <div className="h-24 w-[76px] bg-ink/5" aria-hidden="true" />
+                            )}
                             <div className="min-w-0">
                               <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -277,7 +287,7 @@ export function ShopShell({ children }: ShellProps) {
       <footer className="bg-ink text-cream mt-24 border-t border-white/10 py-12">
         <div className="mx-auto grid max-w-370 gap-10 px-5 sm:px-8 md:grid-cols-[1.3fr_1fr_1fr] lg:px-12">
           <div>
-            <p className="wordmark text-[0.95rem]">SSAROMA</p>
+            <p className="wordmark text-[0.95rem]">{settings.brandName}</p>
             <p className="text-cream/48 mt-4 max-w-sm text-sm leading-7">
               An intimate fragrance house for considered signatures and unhurried discovery.
             </p>
@@ -285,7 +295,7 @@ export function ShopShell({ children }: ShellProps) {
           <div>
             <p className="editorial-kicker text-gold">Visit</p>
             <p className="text-cream/62 mt-4 text-sm leading-7">
-              {SHOP.city}, {SHOP.region}
+              {settings.city}, {settings.region}
               <br />
               Pakistan
             </p>
@@ -293,7 +303,7 @@ export function ShopShell({ children }: ShellProps) {
           <div>
             <p className="editorial-kicker text-gold">Follow</p>
             <a
-              href={LINKS.instagram}
+              href={settings.instagramUrl || "/contact"}
               target="_blank"
               rel="noreferrer"
               className="link-underlined mt-4 text-sm text-cream/62 hover:text-cream"
@@ -303,7 +313,9 @@ export function ShopShell({ children }: ShellProps) {
           </div>
         </div>
         <div className="border-cream/10 mx-auto mt-10 flex max-w-370 flex-col gap-3 border-t px-5 pt-6 text-[0.62rem] tracking-[0.12em] text-cream/38 uppercase sm:px-8 md:flex-row md:justify-between lg:px-12">
-          <span>© {new Date().getFullYear()} SSAROMA</span>
+          <span>
+            © {new Date().getFullYear()} {settings.brandName}
+          </span>
           <span>Curated fragrance experience</span>
         </div>
       </footer>

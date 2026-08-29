@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { LINKS, NAV } from "@/lib/ssaroma";
 
-export function Header() {
+export function Header({ brandName }: { brandName: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -34,7 +36,7 @@ export function Header() {
           className="text-cream wordmark text-[1.05rem] leading-none"
           onClick={() => setOpen(false)}
         >
-          SSAROMA
+          {brandName}
         </a>
 
         <nav

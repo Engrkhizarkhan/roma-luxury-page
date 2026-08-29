@@ -1,12 +1,13 @@
+"use client";
+
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
 import { useRef } from "react";
 import boutiqueInterior from "@/assets/boutique-interior.jpg";
 import galleryDetail from "@/assets/gallery-detail.jpg";
 import galleryWide from "@/assets/gallery-wide.jpg";
-import noirOud from "@/assets/noir-oud.jpg";
-import santalReserve from "@/assets/santal-reserve.jpg";
-import velvetAmber from "@/assets/velvet-amber.jpg";
-import { LINKS, SHOP } from "@/lib/ssaroma";
+import { LINKS, MAP_EMBED_URL } from "@/lib/ssaroma";
+import type { ProductItem, SiteSettings } from "@/types/domain";
 import { Reveal, RevealImage } from "./Reveal";
 
 const HOUSE_PRINCIPLES = [
@@ -19,7 +20,7 @@ const HOUSE_PRINCIPLES = [
   ],
 ] as const;
 
-export function Statement() {
+export function Statement({ settings }: { settings: SiteSettings }) {
   return (
     <section id="house" className="bg-cream text-ink py-28 md:py-44">
       <div className="mx-auto max-w-[1480px] px-5 sm:px-8 lg:px-12">
@@ -33,16 +34,12 @@ export function Statement() {
         <div className="mt-16 grid gap-14 md:mt-24 md:grid-cols-12 md:gap-10">
           <Reveal className="md:col-span-8 lg:col-span-7 lg:col-start-2">
             <h2 className="font-display max-w-[11ch] text-[3rem] leading-[0.98] font-light tracking-[-0.03em] sm:text-[4.25rem] md:text-[5.4rem]">
-              You do not choose a signature in a hurry.
+              {settings.home.houseHeading}
             </h2>
           </Reveal>
 
           <Reveal delay={0.12} className="md:col-span-4 md:self-end lg:col-span-3 lg:col-start-10">
-            <p className="text-ink/68 text-[0.95rem] leading-[1.9]">
-              SSAROMA is built around the moment a fragrance stops smelling like a bottle and starts
-              feeling like you. The selection is considered. The guidance is personal. The final
-              decision is always yours.
-            </p>
+            <p className="text-ink/68 text-[0.95rem] leading-[1.9]">{settings.home.houseBody}</p>
           </Reveal>
         </div>
 
@@ -74,12 +71,12 @@ const RITUAL = [
   ["Live with it", "Wear the final choices on skin. Let warmth, time and memory do their work."],
 ] as const;
 
-export function Experience() {
+export function Experience({ settings }: { settings: SiteSettings }) {
   return (
     <section id="ritual" className="bg-ink text-cream py-28 md:py-44">
       <div className="mx-auto grid max-w-[1480px] gap-16 px-5 sm:px-8 md:grid-cols-12 md:items-center lg:px-12">
         <RevealImage className="img-frame md:col-span-6 lg:col-span-5 lg:col-start-2">
-          <img
+          <Image
             src={boutiqueInterior}
             alt="An intimate fragrance boutique lined with dark wood and warmly lit bottles"
             width={1408}
@@ -93,11 +90,10 @@ export function Experience() {
           <Reveal>
             <p className="editorial-kicker text-gold">The visit</p>
             <h2 className="font-display mt-7 text-[3rem] leading-[0.98] font-light tracking-[-0.025em] sm:text-[4rem] md:text-[4.7rem]">
-              A room made for taking your time.
+              {settings.home.visitHeading}
             </h2>
             <p className="text-cream/64 mt-8 max-w-md text-[0.95rem] leading-[1.9]">
-              There is no pressure to know the language of perfumery. Come with a feeling, a memory
-              or no idea at all. We will guide the rest.
+              {settings.home.visitBody}
             </p>
           </Reveal>
 
@@ -120,34 +116,13 @@ export function Experience() {
   );
 }
 
-const FRAGRANCES = [
-  {
-    name: "Noir Oud",
-    family: "Oud · Leather · Smoke",
-    note: "Dark woods, resin and a measured trail. For evenings that call for restraint, not noise.",
-    image: noirOud,
-    width: 1200,
-    height: 1504,
-  },
-  {
-    name: "Velvet Amber",
-    family: "Amber · Vanilla · Benzoin",
-    note: "Warm, composed and close to the skin. A quiet richness that deepens through the day.",
-    image: velvetAmber,
-    width: 1200,
-    height: 1504,
-  },
-  {
-    name: "Santal Reserve",
-    family: "Sandalwood · Cedar · Iris",
-    note: "Dry woods softened by iris. Clean enough for every day, distinctive enough to be yours.",
-    image: santalReserve,
-    width: 1200,
-    height: 1504,
-  },
-] as const;
-
-export function Collection() {
+export function Collection({
+  products,
+  settings,
+}: {
+  products: ProductItem[];
+  settings: SiteSettings;
+}) {
   return (
     <section id="collection" className="bg-offwhite text-ink py-28 md:py-44">
       <div className="mx-auto max-w-[1480px] px-5 sm:px-8 lg:px-12">
@@ -156,18 +131,17 @@ export function Collection() {
             <div className="md:col-span-7 lg:col-start-2">
               <p className="editorial-kicker text-gold">The fragrance edit</p>
               <h2 className="font-display mt-6 max-w-[13ch] text-[3rem] leading-[1] font-light tracking-[-0.025em] sm:text-[4.1rem] md:text-[4.8rem]">
-                Three distinct ways to be remembered.
+                {settings.home.collectionHeading}
               </h2>
             </div>
             <p className="text-ink/58 max-w-sm text-sm leading-[1.8] md:col-span-3 md:col-start-10">
-              A first look at the SSAROMA edit. Explore the collection online, then visit to
-              understand it on skin.
+              {settings.home.collectionBody}
             </p>
           </div>
         </Reveal>
 
         <div className="mt-20 flex flex-col gap-28 md:mt-28 md:gap-40">
-          {FRAGRANCES.map((fragrance, index) => {
+          {products.map((fragrance, index) => {
             const flipped = index === 1;
             return (
               <article
@@ -184,18 +158,22 @@ export function Collection() {
                         : "md:col-span-7 lg:col-span-6 lg:col-start-2",
                   ].join(" ")}
                 >
-                  <a href={LINKS.store} aria-label={`View ${fragrance.name} on the fragrance site`}>
-                    <img
-                      src={fragrance.image}
-                      alt={`${fragrance.name} fragrance bottle`}
-                      width={fragrance.width}
-                      height={fragrance.height}
-                      loading="lazy"
-                      className={[
-                        "w-full object-cover",
-                        index === 0 ? "aspect-[5/6]" : "aspect-[4/5]",
-                      ].join(" ")}
-                    />
+                  <a href={`/products/${fragrance.slug}`} aria-label={`View ${fragrance.name}`}>
+                    {fragrance.images[0] ? (
+                      <Image
+                        src={fragrance.images[0]}
+                        alt={`${fragrance.name} fragrance bottle`}
+                        width={1200}
+                        height={1504}
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className={[
+                          "w-full object-cover",
+                          index === 0 ? "aspect-[5/6]" : "aspect-[4/5]",
+                        ].join(" ")}
+                      />
+                    ) : (
+                      <div className="bg-cream aspect-[4/5] w-full" aria-hidden="true" />
+                    )}
                   </a>
                 </RevealImage>
 
@@ -217,10 +195,10 @@ export function Collection() {
                   </h3>
                   <p className="editorial-kicker text-ink/52 mt-5">{fragrance.family}</p>
                   <p className="text-ink/64 mt-7 max-w-sm text-[0.95rem] leading-[1.85]">
-                    {fragrance.note}
+                    {fragrance.mood}
                   </p>
                   <a
-                    href={LINKS.store}
+                    href={`/products/${fragrance.slug}`}
                     className="link-underlined arrow-shift editorial-kicker text-ink hover:text-gold mt-9 inline-block transition-colors duration-300"
                   >
                     View fragrance{" "}
@@ -233,6 +211,18 @@ export function Collection() {
             );
           })}
         </div>
+
+        {products.length === 0 ? (
+          <div className="border-ink/18 mt-20 border-y py-16 text-center">
+            <p className="font-display text-3xl font-light">The online edit is being prepared.</p>
+            <a
+              href={`mailto:${settings.email}`}
+              className="link-underlined editorial-kicker mt-6 inline-block"
+            >
+              Ask about current fragrances
+            </a>
+          </div>
+        ) : null}
 
         <Reveal className="mt-28 border-t border-ink/18 pt-9 text-right md:mt-40">
           <a
@@ -250,7 +240,7 @@ export function Collection() {
   );
 }
 
-export function Gallery() {
+export function Gallery({ settings }: { settings: SiteSettings }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
@@ -261,7 +251,7 @@ export function Gallery() {
       <RevealImage className="w-full overflow-hidden">
         <div ref={ref} className="h-[52svh] min-h-[420px] w-full overflow-hidden md:h-[76svh]">
           <motion.img
-            src={galleryWide}
+            src={galleryWide.src}
             alt="A line of fragrance bottles displayed along a dark wood and brass boutique shelf"
             width={1920}
             height={1008}
@@ -276,16 +266,16 @@ export function Gallery() {
         <Reveal className="md:col-span-5 lg:col-span-4 lg:col-start-2">
           <p className="editorial-kicker text-gold">Leave an impression</p>
           <blockquote className="font-display mt-8 text-[2.8rem] leading-[1.03] font-light tracking-[-0.02em] sm:text-[3.6rem]">
-            “Find the fragrance people remember you by.”
+            “{settings.home.galleryQuote}”
           </blockquote>
           <p className="text-cream/48 mt-8 max-w-sm text-sm leading-[1.8]">
-            The best fragrance does not announce itself. It becomes part of how people know you.
+            {settings.home.galleryBody}
           </p>
         </Reveal>
 
         <RevealImage className="img-frame md:col-span-5 md:col-start-8 lg:col-span-4 lg:col-start-9">
           <img
-            src={galleryDetail}
+            src={galleryDetail.src}
             alt="Perfume mist suspended in warm light beside an amber bottle"
             width={1104}
             height={1408}
@@ -298,7 +288,7 @@ export function Gallery() {
   );
 }
 
-export function FinalCta() {
+export function FinalCta({ settings }: { settings: SiteSettings }) {
   return (
     <section id="visit" className="bg-cream text-ink py-28 md:py-44">
       <div className="mx-auto max-w-[1480px] px-5 sm:px-8 lg:px-12">
@@ -312,11 +302,10 @@ export function FinalCta() {
         <div className="mt-16 grid gap-16 md:mt-24 md:grid-cols-12 md:gap-10">
           <Reveal className="md:col-span-7 lg:col-start-2">
             <h2 className="font-display max-w-[10ch] text-[3.5rem] leading-[0.94] font-light tracking-[-0.035em] sm:text-[5rem] md:text-[6.15rem]">
-              Your signature is waiting.
+              {settings.home.ctaHeading}
             </h2>
             <p className="text-ink/64 mt-8 max-w-md text-[0.95rem] leading-[1.85]">
-              Come in, take your time and leave with a fragrance that feels considered—not chosen in
-              a rush.
+              {settings.home.ctaBody}
             </p>
           </Reveal>
 
@@ -327,7 +316,7 @@ export function FinalCta() {
             <div className="border-y border-ink/18">
               <div className="py-6">
                 <p className="editorial-kicker text-ink/42">Location</p>
-                <p className="font-display mt-3 text-2xl font-light">{SHOP.address}</p>
+                <p className="font-display mt-3 text-2xl font-light">{settings.address}</p>
               </div>
               <div className="border-t border-ink/18 py-6">
                 <p className="editorial-kicker text-ink/42">In store</p>
@@ -337,13 +326,13 @@ export function FinalCta() {
               </div>
               <div className="border-t border-ink/18 py-6">
                 <p className="editorial-kicker text-ink/42">Visit</p>
-                <p className="mt-3 text-sm leading-[1.75]">{SHOP.hours}</p>
+                <p className="mt-3 text-sm leading-[1.75]">{settings.hours}</p>
               </div>
             </div>
 
             <div className="mt-9 flex flex-col items-start gap-6">
               <a
-                href={LINKS.map}
+                href={settings.mapUrl || LINKS.map}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-ink text-cream editorial-kicker hover:bg-gold hover:text-ink w-full px-8 py-4 text-center transition-colors duration-400"
@@ -362,12 +351,36 @@ export function FinalCta() {
             </div>
           </Reveal>
         </div>
+
+        <Reveal className="border-ink/18 relative mt-20 overflow-hidden border bg-offwhite md:mt-28">
+          <div className="border-ink/14 border-b px-5 py-5 md:absolute md:top-6 md:left-6 md:z-10 md:w-[330px] md:border md:bg-offwhite/95 md:px-6 md:py-6 md:shadow-2xl md:backdrop-blur-sm">
+            <p className="editorial-kicker text-gold">SSAROMA boutique</p>
+            <p className="font-display mt-3 text-2xl font-light">First Floor, Shop No. 4</p>
+            <p className="text-ink/58 mt-2 text-sm leading-6">MK Tower · Peshawar</p>
+            <a
+              href={settings.mapUrl || LINKS.map}
+              target="_blank"
+              rel="noreferrer"
+              className="link-underlined editorial-kicker mt-5 inline-block"
+            >
+              Open directions ↗
+            </a>
+          </div>
+          <iframe
+            src={MAP_EMBED_URL}
+            title="Map showing SSAROMA at MK Tower, Peshawar"
+            className="h-[390px] w-full border-0 md:h-[520px]"
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </Reveal>
       </div>
     </section>
   );
 }
 
-export function Footer() {
+export function Footer({ settings }: { settings: SiteSettings }) {
   const year = new Date().getFullYear();
 
   return (
@@ -378,12 +391,12 @@ export function Footer() {
           className="wordmark text-cream block text-[clamp(2.9rem,10.5vw,9.6rem)] leading-none tracking-[0.04em]"
           aria-label="Back to the top"
         >
-          SSAROMA
+          {settings.brandName}
         </a>
 
         <div className="border-cream/16 mt-14 grid gap-10 border-t pt-9 md:grid-cols-12 md:items-end">
           <p className="text-cream/46 max-w-sm text-sm leading-[1.75] md:col-span-4">
-            An intimate fragrance house in {SHOP.city}, devoted to the art of finding your
+            An intimate fragrance house in {settings.city}, devoted to the art of finding your
             signature.
           </p>
 
@@ -410,7 +423,7 @@ export function Footer() {
               Fragrances ↗
             </a>
             <a
-              href={LINKS.instagram}
+              href={settings.instagramUrl || LINKS.instagram}
               target="_blank"
               rel="noreferrer"
               className="link-rule editorial-kicker text-cream/66 hover:text-gold transition-colors duration-300"
@@ -418,7 +431,7 @@ export function Footer() {
               Instagram ↗
             </a>
             <a
-              href={`mailto:${SHOP.email}`}
+              href="/contact"
               className="link-rule editorial-kicker text-cream/66 hover:text-gold transition-colors duration-300"
             >
               Contact
@@ -428,10 +441,10 @@ export function Footer() {
 
         <div className="text-cream/36 mt-12 flex flex-col gap-3 text-[0.7rem] tracking-[0.08em] sm:flex-row sm:items-center sm:justify-between">
           <p>
-            {SHOP.city} · {SHOP.region}
+            {settings.city} · {settings.region}
           </p>
           <p>
-            © {year} {SHOP.name}
+            © {year} {settings.brandName}
           </p>
         </div>
       </div>
