@@ -88,6 +88,11 @@ export type OrderRecord = {
   promoCode?: string;
   placedAt: string;
   status: OrderStatus;
+  statusHistory: Array<{
+    status: OrderStatus;
+    changedAt: string;
+    changedBy: string;
+  }>;
 };
 
 export type PromoCode = {
@@ -149,6 +154,11 @@ export type SiteSettings = {
   freeDeliveryThreshold: number;
   orderConfirmationMessage: string;
   home: {
+    showHouse: boolean;
+    showVisit: boolean;
+    showCollection: boolean;
+    showGallery: boolean;
+    showCta: boolean;
     houseHeading: string;
     houseBody: string;
     visitHeading: string;
@@ -163,4 +173,7 @@ export type SiteSettings = {
   logo?: MediaItem;
   heroImage?: MediaItem;
   heroVideo?: MediaItem;
+  visitImage?: MediaItem;
+  galleryWideImage?: MediaItem;
+  galleryDetailImage?: MediaItem;
 };

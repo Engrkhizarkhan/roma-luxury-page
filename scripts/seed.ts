@@ -5,6 +5,10 @@ import path from "node:path";
 import { Product } from "../src/models/product";
 import { Category, Collection } from "../src/models/taxonomy";
 import { SiteSettingsModel } from "../src/models/site-settings";
+import { Order } from "../src/models/order";
+import { Promotion } from "../src/models/promotion";
+import { ReturnCaseModel } from "../src/models/return-case";
+import { ContactSubmission } from "../src/models/contact";
 
 loadEnvConfig(process.cwd());
 const required = (name: string) => {
@@ -363,13 +367,14 @@ async function main() {
       bytes: uploaded.bytes,
     });
   }
+  const productMap = new Map<string, any>();
   for (const item of products) {
     const media = item.media.map((name, index) => ({
       ...assets.get(name),
       alt: `${item.name} ${index === 0 ? "fragrance bottle" : `presentation ${index + 1}`}`,
       position: index,
     }));
-    await Product.findOneAndUpdate(
+    const product = await Product.findOneAndUpdate(
       { slug: item.slug },
       {
         $set: {
@@ -387,6 +392,7 @@ async function main() {
         runValidators: true,
       },
     );
+    productMap.set(item.slug, product);
   }
   const hero = assets.get("hero-poster");
   const uploadedVideo = await cloudinary.uploader.upload(
@@ -431,6 +437,11 @@ async function main() {
         orderConfirmationMessage:
           "Your order has been received. Our team will call to confirm before dispatch.",
         home: {
+          showHouse: true,
+          showVisit: true,
+          showCollection: true,
+          showGallery: true,
+          showCta: true,
           houseHeading: "You do not choose a signature in a hurry.",
           houseBody:
             "SSAROMA is built around the moment a fragrance stops smelling like a bottle and starts feeling like you. The selection is considered. The guidance is personal. The final decision is always yours.",
@@ -449,6 +460,9 @@ async function main() {
         },
         heroImage: hero,
         heroVideo,
+        visitImage: assets.get("boutique-interior"),
+        galleryWideImage: assets.get("gallery-wide"),
+        galleryDetailImage: assets.get("gallery-detail"),
       },
     },
     {
@@ -458,8 +472,241 @@ async function main() {
       runValidators: true,
     },
   );
+
+  const daysAgo = (days: number, hour = 12) => {
+    const value = new Date();
+    value.setDate(value.getDate() - days);
+    value.setHours(hour, 0, 0, 0);
+    return value;
+  };
+  const demoOrders = [
+    {
+      orderNumber: "SSA-DEMO-1001",
+      customer: { name: "Areeba Khan", email: "areeba@example.com", phone: "+92 300 1112233" },
+      address: {
+        street: "House 18, Street 4, Hayatabad Phase 3",
+        city: "Peshawar",
+        postalCode: "25100",
+      },
+      note: "Please call before delivery.",
+      lines: [{ slug: "velvet-amber", quantity: 1 }],
+      status: "pending",
+      placedAt: daysAgo(0, 10),
+      discount: 0,
+      promoCode: "",
+    },
+    {
+      orderNumber: "SSA-DEMO-1002",
+      customer: { name: "Hamza Shah", email: "hamza@example.com", phone: "+92 333 4455667" },
+      address: { street: "University Town, Park Road", city: "Peshawar", postalCode: "25000" },
+      note: "Gift wrap the fragrance, please.",
+      lines: [
+        { slug: "noir-oud", quantity: 1 },
+        { slug: "citrus-memoir", quantity: 1 },
+      ],
+      status: "processing",
+      placedAt: daysAgo(1, 15),
+      discount: 1500,
+      promoCode: "PESHAWAR1500",
+    },
+    {
+      orderNumber: "SSA-DEMO-1003",
+      customer: { name: "Mariam Ali", email: "mariam@example.com", phone: "+92 321 7788990" },
+      address: { street: "Street 7, Cantonment", city: "Rawalpindi", postalCode: "46000" },
+      note: "",
+      lines: [{ slug: "iris-suede", quantity: 1 }],
+      status: "shipped",
+      placedAt: daysAgo(2, 11),
+      discount: 2520,
+      promoCode: "WELCOME10",
+    },
+    {
+      orderNumber: "SSA-DEMO-1004",
+      customer: { name: "Usman Tariq", email: "usman@example.com", phone: "+92 345 1122334" },
+      address: { street: "F-10 Markaz, Street 12", city: "Islamabad", postalCode: "44000" },
+      note: "Leave with reception if unavailable.",
+      lines: [{ slug: "santal-reserve", quantity: 1 }],
+      status: "delivered",
+      placedAt: daysAgo(4, 9),
+      discount: 0,
+      promoCode: "",
+    },
+    {
+      orderNumber: "SSA-DEMO-1005",
+      customer: { name: "Sana Noor", email: "sana@example.com", phone: "+92 312 5566778" },
+      address: { street: "Gulberg III, Block C", city: "Lahore", postalCode: "54660" },
+      note: "",
+      lines: [
+        { slug: "rose-nocturne", quantity: 1 },
+        { slug: "marine-velour", quantity: 1 },
+      ],
+      status: "delivered",
+      placedAt: daysAgo(7, 14),
+      discount: 1500,
+      promoCode: "PESHAWAR1500",
+    },
+    {
+      orderNumber: "SSA-DEMO-1006",
+      customer: { name: "Bilal Ahmed", email: "bilal@example.com", phone: "+92 304 9988776" },
+      address: { street: "Saddar Road, Near Mall", city: "Peshawar", postalCode: "25000" },
+      note: "Customer requested cancellation before packing.",
+      lines: [{ slug: "amber-dusk", quantity: 1 }],
+      status: "cancelled",
+      placedAt: daysAgo(9, 16),
+      discount: 0,
+      promoCode: "",
+    },
+  ] as const;
+
+  const seededOrders = new Map<string, any>();
+  for (const demo of demoOrders) {
+    const items = demo.lines.map((line) => {
+      const product = productMap.get(line.slug);
+      if (!product) throw new Error(`Seed product ${line.slug} was not created.`);
+      return {
+        product: product._id,
+        name: product.name,
+        slug: product.slug,
+        image: product.media?.[0]?.url,
+        price: product.price,
+        quantity: line.quantity,
+        sizeMl: product.sizeMl,
+        concentration: product.concentration,
+      };
+    });
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const deliveryFee = subtotal >= 20000 ? 0 : 350;
+    const path =
+      demo.status === "delivered"
+        ? ["pending", "processing", "shipped", "delivered"]
+        : demo.status === "shipped"
+          ? ["pending", "processing", "shipped"]
+          : demo.status === "processing"
+            ? ["pending", "processing"]
+            : demo.status === "cancelled"
+              ? ["pending", "cancelled"]
+              : ["pending"];
+    const statusHistory = path.map((status, index) => ({
+      status,
+      changedAt: new Date(demo.placedAt.getTime() + index * 8 * 60 * 60 * 1000),
+      changedBy: index === 0 ? "storefront" : "demo.admin",
+    }));
+    const order = await Order.findOneAndUpdate(
+      { orderNumber: demo.orderNumber },
+      {
+        $set: {
+          customer: demo.customer,
+          address: demo.address,
+          note: demo.note,
+          items,
+          subtotal,
+          deliveryFee,
+          discount: demo.discount,
+          total: subtotal + deliveryFee - demo.discount,
+          promoCode: demo.promoCode || undefined,
+          status: demo.status,
+          statusHistory,
+          createdAt: demo.placedAt,
+        },
+      },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true, runValidators: true },
+    );
+    seededOrders.set(demo.orderNumber, order);
+  }
+
+  const now = new Date();
+  await Promotion.findOneAndUpdate(
+    { code: "WELCOME10" },
+    {
+      $set: {
+        discountType: "percent",
+        discountValue: 10,
+        minOrder: 15000,
+        validFrom: daysAgo(30),
+        validTo: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()),
+        active: true,
+        usageCount: 1,
+        usageLimit: 100,
+      },
+    },
+    { upsert: true, runValidators: true, setDefaultsOnInsert: true },
+  );
+  await Promotion.findOneAndUpdate(
+    { code: "PESHAWAR1500" },
+    {
+      $set: {
+        discountType: "amount",
+        discountValue: 1500,
+        minOrder: 20000,
+        validFrom: daysAgo(14),
+        validTo: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()),
+        active: true,
+        usageCount: 2,
+        usageLimit: 50,
+      },
+    },
+    { upsert: true, runValidators: true, setDefaultsOnInsert: true },
+  );
+
+  const returnedOrder = seededOrders.get("SSA-DEMO-1004");
+  const returnedProduct = productMap.get("santal-reserve");
+  await ReturnCaseModel.findOneAndUpdate(
+    { returnNumber: "RET-DEMO-1001" },
+    {
+      $set: {
+        order: returnedOrder._id,
+        product: returnedProduct._id,
+        productName: returnedProduct.name,
+        customerName: returnedOrder.customer.name,
+        reason: "The sealed box arrived with a dent on one corner.",
+        amount: returnedProduct.price,
+        status: "approved",
+        condition: "Courier damage",
+        refundMethod: "Bank transfer",
+        createdAt: daysAgo(2, 13),
+      },
+    },
+    { upsert: true, runValidators: true, setDefaultsOnInsert: true },
+  );
+
+  const demoContacts = [
+    {
+      name: "Zoya Rehman",
+      email: "zoya@example.com",
+      phone: "+92 301 2233445",
+      subject: "Private fragrance consultation",
+      message: "I would like to arrange a guided visit for two people this weekend.",
+      status: "new",
+      createdAt: daysAgo(0, 9),
+    },
+    {
+      name: "Fahad Malik",
+      email: "fahad@example.com",
+      phone: "+92 322 3344556",
+      subject: "Noir Oud availability",
+      message: "Could you confirm whether Noir Oud is available for collection today?",
+      status: "read",
+      createdAt: daysAgo(1, 12),
+    },
+    {
+      name: "Hira Saeed",
+      email: "hira@example.com",
+      phone: "",
+      subject: "Corporate gifting",
+      message: "Please share options for twelve individually wrapped gifts.",
+      status: "resolved",
+      createdAt: daysAgo(5, 10),
+    },
+  ] as const;
+  for (const contact of demoContacts) {
+    await ContactSubmission.findOneAndUpdate(
+      { email: contact.email, subject: contact.subject },
+      { $set: contact },
+      { upsert: true, runValidators: true, setDefaultsOnInsert: true },
+    );
+  }
   console.log(
-    `Seeded ${products.length} products, ${collections.length} collections, and ${categories.length} categories.`,
+    `Seeded ${products.length} products, ${demoOrders.length} orders, ${collections.length} collections, ${categories.length} categories, promotions, a return, and enquiries.`,
   );
   await mongoose.disconnect();
 }

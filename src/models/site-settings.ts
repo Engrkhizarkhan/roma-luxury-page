@@ -24,6 +24,11 @@ const SiteSettingsSchema = new Schema(
     freeDeliveryThreshold: { type: Number, default: 20000, min: 0 },
     orderConfirmationMessage: { type: String, required: true, trim: true, maxlength: 600 },
     home: {
+      showHouse: { type: Boolean, default: true },
+      showVisit: { type: Boolean, default: true },
+      showCollection: { type: Boolean, default: true },
+      showGallery: { type: Boolean, default: true },
+      showCta: { type: Boolean, default: true },
       houseHeading: { type: String, required: true, trim: true, maxlength: 220 },
       houseBody: { type: String, required: true, trim: true, maxlength: 1200 },
       visitHeading: { type: String, required: true, trim: true, maxlength: 220 },
@@ -38,6 +43,9 @@ const SiteSettingsSchema = new Schema(
     logo: MediaSchema,
     heroImage: MediaSchema,
     heroVideo: MediaSchema,
+    visitImage: MediaSchema,
+    galleryWideImage: MediaSchema,
+    galleryDetailImage: MediaSchema,
   },
   { timestamps: true },
 );

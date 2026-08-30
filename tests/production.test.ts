@@ -67,6 +67,37 @@ test("public settings reject executable URL schemes", () => {
   );
 });
 
+test("homepage settings default section visibility and require images for image slots", () => {
+  const home = settingsSchema.shape.home.parse({
+    houseHeading: "House heading",
+    houseBody: "House body",
+    visitHeading: "Visit heading",
+    visitBody: "Visit body",
+    collectionHeading: "Collection heading",
+    collectionBody: "Collection body",
+    galleryQuote: "Gallery quote",
+    galleryBody: "Gallery body",
+    ctaHeading: "CTA heading",
+    ctaBody: "CTA body",
+  });
+  assert.equal(home.showHouse, true);
+  assert.equal(home.showGallery, true);
+
+  const imageSlots = settingsSchema.pick({ visitImage: true });
+  assert.equal(
+    imageSlots.safeParse({
+      visitImage: {
+        id: "visit-image",
+        type: "video",
+        url: "https://res.cloudinary.com/demo/video.mp4",
+        publicId: "ssaroma/demo/video",
+        alt: "Wrong media type",
+      },
+    }).success,
+    false,
+  );
+});
+
 test("JSON and same-origin request guards reject malformed requests", () => {
   assert.throws(() =>
     assertJsonRequest(

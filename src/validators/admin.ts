@@ -150,6 +150,11 @@ export const settingsSchema = z.object({
   freeDeliveryThreshold: z.coerce.number().nonnegative(),
   orderConfirmationMessage: trimmed(600),
   home: z.object({
+    showHouse: z.boolean().default(true),
+    showVisit: z.boolean().default(true),
+    showCollection: z.boolean().default(true),
+    showGallery: z.boolean().default(true),
+    showCta: z.boolean().default(true),
     houseHeading: trimmed(220),
     houseBody: trimmed(1200),
     visitHeading: trimmed(220),
@@ -164,4 +169,7 @@ export const settingsSchema = z.object({
   logo: imageMediaSchema.optional(),
   heroImage: imageMediaSchema.optional(),
   heroVideo: videoMediaSchema.optional(),
+  visitImage: imageMediaSchema.optional(),
+  galleryWideImage: imageMediaSchema.optional(),
+  galleryDetailImage: imageMediaSchema.optional(),
 });

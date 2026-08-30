@@ -28,6 +28,11 @@ export const initialSettings: SiteSettings = {
   orderConfirmationMessage:
     "Your order has been received. Our team will call to confirm before dispatch.",
   home: {
+    showHouse: true,
+    showVisit: true,
+    showCollection: true,
+    showGallery: true,
+    showCta: true,
     houseHeading: "You do not choose a signature in a hurry.",
     houseBody:
       "SSAROMA is built around the moment a fragrance stops smelling like a bottle and starts feeling like you. The selection is considered. The guidance is personal. The final decision is always yours.",
@@ -73,9 +78,16 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     deliveryFee: value.deliveryFee,
     freeDeliveryThreshold: value.freeDeliveryThreshold,
     orderConfirmationMessage: value.orderConfirmationMessage,
-    home: value.home ?? initialSettings.home,
+    home: { ...initialSettings.home, ...(value.home ?? {}) },
     logo: value.logo?.url ? serializeMedia(value.logo) : undefined,
     heroImage: value.heroImage?.url ? serializeMedia(value.heroImage) : undefined,
     heroVideo: value.heroVideo?.url ? serializeMedia(value.heroVideo) : undefined,
+    visitImage: value.visitImage?.url ? serializeMedia(value.visitImage) : undefined,
+    galleryWideImage: value.galleryWideImage?.url
+      ? serializeMedia(value.galleryWideImage)
+      : undefined,
+    galleryDetailImage: value.galleryDetailImage?.url
+      ? serializeMedia(value.galleryDetailImage)
+      : undefined,
   };
 }

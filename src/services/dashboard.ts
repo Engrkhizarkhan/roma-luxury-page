@@ -41,6 +41,11 @@ export function serializeOrder(order: any): OrderRecord {
     promoCode: order.promoCode || "",
     placedAt: new Date(order.createdAt).toISOString(),
     status: order.status,
+    statusHistory: (order.statusHistory || []).map((event: any) => ({
+      status: event.status,
+      changedAt: new Date(event.changedAt).toISOString(),
+      changedBy: event.changedBy || "system",
+    })),
   };
 }
 

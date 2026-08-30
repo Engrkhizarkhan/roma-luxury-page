@@ -60,11 +60,13 @@ export default async function HomePage() {
       <Header brandName={settings.brandName} />
       <main>
         <Hero settings={settings} />
-        <Statement settings={settings} />
-        <Experience settings={settings} />
-        <Collection products={featured} settings={settings} />
-        <Gallery settings={settings} />
-        <FinalCta settings={settings} />
+        {settings.home.showHouse ? <Statement settings={settings} /> : null}
+        {settings.home.showVisit ? <Experience settings={settings} /> : null}
+        {settings.home.showCollection ? (
+          <Collection products={featured} settings={settings} />
+        ) : null}
+        {settings.home.showGallery ? <Gallery settings={settings} /> : null}
+        {settings.home.showCta ? <FinalCta settings={settings} /> : null}
       </main>
       <Footer settings={settings} />
       <script

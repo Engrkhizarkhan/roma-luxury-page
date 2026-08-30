@@ -22,14 +22,23 @@ export async function PATCH(request: Request) {
     await connectToDatabase();
     const input = settingsSchema.parse(await request.json());
     const existing = await SiteSettingsModel.findOne({ key: "primary" })
-      .select("logo heroImage heroVideo")
+      .select("logo heroImage heroVideo visitImage galleryWideImage galleryDetailImage")
       .lean();
     await SiteSettingsModel.findOneAndUpdate(
       { key: "primary" },
       { $set: input },
       { upsert: true, runValidators: true },
     );
-    const removed = (["logo", "heroImage", "heroVideo"] as const).flatMap((key) => {
+    const removed = (
+      [
+        "logo",
+        "heroImage",
+        "heroVideo",
+        "visitImage",
+        "galleryWideImage",
+        "galleryDetailImage",
+      ] as const
+    ).flatMap((key) => {
       const previous = existing?.[key];
       const next = input[key];
       return previous?.publicId && previous.publicId !== next?.publicId ? [previous] : [];

@@ -77,8 +77,11 @@ export function Experience({ settings }: { settings: SiteSettings }) {
       <div className="mx-auto grid max-w-[1480px] gap-16 px-5 sm:px-8 md:grid-cols-12 md:items-center lg:px-12">
         <RevealImage className="img-frame md:col-span-6 lg:col-span-5 lg:col-start-2">
           <Image
-            src={boutiqueInterior}
-            alt="An intimate fragrance boutique lined with dark wood and warmly lit bottles"
+            src={settings.visitImage?.url || boutiqueInterior}
+            alt={
+              settings.visitImage?.alt ||
+              "An intimate fragrance boutique lined with dark wood and warmly lit bottles"
+            }
             width={1408}
             height={1760}
             loading="lazy"
@@ -251,8 +254,11 @@ export function Gallery({ settings }: { settings: SiteSettings }) {
       <RevealImage className="w-full overflow-hidden">
         <div ref={ref} className="h-[52svh] min-h-[420px] w-full overflow-hidden md:h-[76svh]">
           <motion.img
-            src={galleryWide.src}
-            alt="A line of fragrance bottles displayed along a dark wood and brass boutique shelf"
+            src={settings.galleryWideImage?.url || galleryWide.src}
+            alt={
+              settings.galleryWideImage?.alt ||
+              "A line of fragrance bottles displayed along a dark wood and brass boutique shelf"
+            }
             width={1920}
             height={1008}
             loading="lazy"
@@ -275,8 +281,11 @@ export function Gallery({ settings }: { settings: SiteSettings }) {
 
         <RevealImage className="img-frame md:col-span-5 md:col-start-8 lg:col-span-4 lg:col-start-9">
           <img
-            src={galleryDetail.src}
-            alt="Perfume mist suspended in warm light beside an amber bottle"
+            src={settings.galleryDetailImage?.url || galleryDetail.src}
+            alt={
+              settings.galleryDetailImage?.alt ||
+              "Perfume mist suspended in warm light beside an amber bottle"
+            }
             width={1104}
             height={1408}
             loading="lazy"

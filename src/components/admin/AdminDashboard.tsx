@@ -3,12 +3,15 @@
 import Link from "next/link";
 import {
   Box,
+  ChevronDown,
   CircleDollarSign,
   FolderTree,
   LayoutDashboard,
   LogOut,
   Mail,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Plus,
   RotateCcw,
@@ -21,7 +24,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { Fragment, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
@@ -94,6 +97,10 @@ type View =
   | "returns"
   | "enquiries"
   | "settings";
+type HomeCopyKey = Exclude<
+  keyof SiteSettings["home"],
+  "showHouse" | "showVisit" | "showCollection" | "showGallery" | "showCta"
+>;
 
 const nav: Array<[View, string, typeof LayoutDashboard]> = [
   ["overview", "Dashboard", LayoutDashboard],
@@ -132,6 +139,7 @@ export function AdminDashboard({
   const [data, setData] = useState(initialData);
   const [view, setView] = useState<View>("overview");
   const [mobile, setMobile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const title: Record<View, [string, string]> = {
     overview: ["Dashboard", "Orders, revenue, stock, and recent activity at a glance."],
     orders: ["Orders", "View every order and update its status."],
@@ -152,29 +160,51 @@ export function AdminDashboard({
   const update = <K extends keyof DashboardData>(key: K, value: DashboardData[K]) =>
     setData((current) => ({ ...current, [key]: value }));
   return (
-    <div className="admin-dashboard bg-[#f1efe9] text-[#171713] min-h-screen lg:grid lg:grid-cols-[288px_1fr]">
-      <aside className="bg-[#171713] text-[#f3efe5] sticky top-0 hidden h-screen flex-col lg:flex">
-        <Brand />
-        <Navigation value={view} setValue={setView} data={data} />
+    <div
+      className={`admin-dashboard bg-[#f1efe9] text-[#171713] min-h-screen lg:grid ${sidebarCollapsed ? "lg:grid-cols-[88px_1fr]" : "lg:grid-cols-[288px_1fr]"}`}
+    >
+      <aside className="bg-[#171713] text-[#f3efe5] sticky top-0 hidden h-screen min-w-0 flex-col transition-[width] lg:flex">
+        <Brand collapsed={sidebarCollapsed} />
+        <Navigation value={view} setValue={setView} data={data} collapsed={sidebarCollapsed} />
         <div className="mt-auto border-t border-white/10 p-4">
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 px-3 py-3 text-xs text-white/55 hover:text-white"
+            title={sidebarCollapsed ? "Sign out" : undefined}
+            className={`flex w-full items-center px-3 py-3 text-xs text-white/55 hover:text-white ${sidebarCollapsed ? "justify-center" : "gap-3"}`}
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {!sidebarCollapsed ? "Sign out" : null}
           </button>
-          <p className="px-3 pt-3 text-xs text-white/35">{username}</p>
+          {!sidebarCollapsed ? <p className="px-3 pt-3 text-xs text-white/35">{username}</p> : null}
         </div>
       </aside>
       <div className="min-w-0">
         <header className="border-black/10 bg-[#f1efe9]/95 sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 backdrop-blur sm:px-7">
-          <button className="lg:hidden" onClick={() => setMobile(true)}>
+          <button
+            className="lg:hidden"
+            onClick={() => setMobile(true)}
+            aria-label="Open navigation"
+          >
             <Menu className="h-5 w-5" />
           </button>
-          <p className="hidden text-xs text-black/45 sm:block">
-            SSAROMA / <span className="text-black">{title[view][0]}</span>
-          </p>
+          <div className="hidden items-center gap-4 lg:flex">
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              className="border-black/15 border p-2 text-black/55 transition-colors hover:text-black"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+            <p className="text-xs text-black/45">
+              SSAROMA / <span className="text-black">{title[view][0]}</span>
+            </p>
+          </div>
           <Link
             href="/products"
             target="_blank"
@@ -259,11 +289,13 @@ export function AdminDashboard({
   );
 }
 
-function Brand() {
+function Brand({ collapsed = false }: { collapsed?: boolean }) {
   return (
-    <div className="border-b border-white/10 px-7 py-6">
-      <p className="wordmark text-sm">SSAROMA</p>
-      <p className="mt-2 text-xs tracking-[.12em] text-white/45 uppercase">Store operations</p>
+    <div className={`border-b border-white/10 py-6 ${collapsed ? "px-3 text-center" : "px-7"}`}>
+      <p className="wordmark text-sm">{collapsed ? "SSA" : "SSAROMA"}</p>
+      {!collapsed ? (
+        <p className="mt-2 text-xs tracking-[.12em] text-white/45 uppercase">Store operations</p>
+      ) : null}
     </div>
   );
 }
@@ -271,13 +303,15 @@ function Navigation({
   value,
   setValue,
   data,
+  collapsed = false,
 }: {
   value: View;
   setValue: (v: View) => void;
   data: DashboardData;
+  collapsed?: boolean;
 }) {
   return (
-    <nav className="flex-1 overflow-y-auto p-4">
+    <nav className={`admin-sidebar-scroll flex-1 overflow-y-auto ${collapsed ? "p-2" : "p-4"}`}>
       {nav.map(([key, label, Icon]) => {
         const count =
           key === "fulfillment"
@@ -293,11 +327,19 @@ function Navigation({
           <button
             key={key}
             onClick={() => setValue(key)}
-            className={`mb-1 flex w-full items-center gap-3 px-3 py-3 text-left text-sm ${value === key ? "bg-[#aa8755] font-semibold text-[#171713]" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
+            title={collapsed ? label : undefined}
+            aria-label={label}
+            className={`relative mb-1 flex w-full items-center px-3 py-3 text-left text-sm ${collapsed ? "justify-center" : "gap-3"} ${value === key ? "bg-[#aa8755] font-semibold text-[#171713]" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
           >
-            <Icon className="h-4 w-4" />
-            <span className="flex-1">{label}</span>
-            {count > 0 && <span className="bg-white/10 px-2 py-0.5 text-[.6rem]">{count}</span>}
+            <Icon className="h-4 w-4 shrink-0" />
+            {!collapsed ? <span className="flex-1">{label}</span> : null}
+            {count > 0 && (
+              <span
+                className={`bg-white/10 px-2 py-0.5 text-[.6rem] ${collapsed ? "absolute top-1 right-1 min-w-5 px-1 text-center" : ""}`}
+              >
+                {count}
+              </span>
+            )}
           </button>
         );
       })}
@@ -424,6 +466,7 @@ function OrderTable({
   orders: OrderRecord[];
   onStatus?: (id: string, status: OrderRecord["status"]) => void;
 }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -438,42 +481,117 @@ function OrderTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>
-                <p className="font-medium">{order.orderNumber}</p>
-                <p className="mt-1 text-[.65rem] text-black/40">{order.city}</p>
-              </TableCell>
-              <TableCell>
-                {order.customer}
-                <p className="mt-1 text-[.65rem] text-black/40">{order.phone}</p>
-              </TableCell>
-              <TableCell>{date(order.placedAt)}</TableCell>
-              <TableCell>{order.itemCount}</TableCell>
-              <TableCell>{formatMoney(order.total)}</TableCell>
-              <TableCell>
-                {onStatus ? (
-                  <Select
-                    value={order.status}
-                    onValueChange={(v) => onStatus(order.id, v as OrderRecord["status"])}
-                  >
-                    <SelectTrigger className="h-8 w-34">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["pending", "processing", "shipped", "delivered", "cancelled"].map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {v}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Status value={order.status} />
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((order) => {
+            const open = expanded === order.id;
+            return (
+              <Fragment key={order.id}>
+                <TableRow>
+                  <TableCell>
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(open ? null : order.id)}
+                      className="group text-left"
+                      aria-expanded={open}
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        {order.orderNumber}
+                        <ChevronDown
+                          className={`h-3.5 w-3.5 text-black/35 transition-transform ${open ? "rotate-180" : ""}`}
+                        />
+                      </span>
+                      <span className="mt-1 block text-[.65rem] text-black/40">{order.city}</span>
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    {order.customer}
+                    <p className="mt-1 text-[.65rem] text-black/40">{order.phone}</p>
+                  </TableCell>
+                  <TableCell>{date(order.placedAt)}</TableCell>
+                  <TableCell>{order.itemCount}</TableCell>
+                  <TableCell>{formatMoney(order.total)}</TableCell>
+                  <TableCell>
+                    {onStatus ? (
+                      <Select
+                        value={order.status}
+                        onValueChange={(v) => onStatus(order.id, v as OrderRecord["status"])}
+                      >
+                        <SelectTrigger className="h-8 w-34">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["pending", "processing", "shipped", "delivered", "cancelled"].map(
+                            (v) => (
+                              <SelectItem key={v} value={v}>
+                                {v}
+                              </SelectItem>
+                            ),
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Status value={order.status} />
+                    )}
+                  </TableCell>
+                </TableRow>
+                {open ? (
+                  <TableRow className="bg-[#f7f5ef] hover:bg-[#f7f5ef]">
+                    <TableCell colSpan={6} className="p-5 sm:p-7">
+                      <div className="grid gap-7 lg:grid-cols-[1.25fr_1fr]">
+                        <div>
+                          <p className="editorial-kicker text-black/40">Order tracking</p>
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {order.statusHistory.map((event, index) => (
+                              <div
+                                key={`${event.status}-${event.changedAt}-${index}`}
+                                className="border-l-2 border-[#aa8755] pl-3"
+                              >
+                                <p className="text-sm font-semibold capitalize">{event.status}</p>
+                                <p className="mt-1 text-xs text-black/45">
+                                  {dateTime(event.changedAt)}
+                                </p>
+                                <p className="mt-1 text-xs text-black/35">by {event.changedBy}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+                          <div>
+                            <p className="editorial-kicker text-black/40">Delivery</p>
+                            <p className="mt-2 text-sm leading-6">
+                              {order.address}, {order.city}
+                              {order.postalCode ? ` ${order.postalCode}` : ""}
+                            </p>
+                            {order.email ? (
+                              <p className="mt-1 text-xs text-black/45">{order.email}</p>
+                            ) : null}
+                          </div>
+                          <div>
+                            <p className="editorial-kicker text-black/40">Items</p>
+                            <div className="mt-2 space-y-1">
+                              {order.items.map((item) => (
+                                <p
+                                  key={`${item.productId}-${item.name}`}
+                                  className="flex justify-between gap-4 text-sm"
+                                >
+                                  <span>
+                                    {item.quantity} × {item.name} · {item.sizeMl}ml
+                                  </span>
+                                  <span>{formatMoney(item.price * item.quantity)}</span>
+                                </p>
+                              ))}
+                            </div>
+                            {order.note ? (
+                              <p className="mt-3 text-xs italic text-black/45">“{order.note}”</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </Fragment>
+            );
+          })}
           {!orders.length && (
             <TableRow>
               <TableCell colSpan={6}>
@@ -1609,16 +1727,22 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
     }
   };
   const field = (key: keyof SiteSettings, val: any) => setDraft({ ...draft, [key]: val });
-  const homeField = (key: keyof SiteSettings["home"], val: string) =>
+  const homeField = (key: keyof SiteSettings["home"], val: string | boolean) =>
     setDraft({ ...draft, home: { ...draft.home, [key]: val } });
-  const upload = async (key: "logo" | "heroImage" | "heroVideo", file: File) => {
+  const upload = async (
+    key:
+      "logo" | "heroImage" | "heroVideo" | "visitImage" | "galleryWideImage" | "galleryDetailImage",
+    file: File,
+  ) => {
     setUploading(key);
     try {
       const form = new FormData();
       form.set("file", file);
       form.set(
         "alt",
-        key === "logo" ? `${draft.brandName} logo` : `${draft.brandName} boutique hero`,
+        key === "logo"
+          ? `${draft.brandName} logo`
+          : `${draft.brandName} ${key.replace(/([A-Z])/g, " $1").toLowerCase()}`,
       );
       const result = await api<{ media: MediaItem }>("/api/admin/media", {
         method: "POST",
@@ -1726,10 +1850,33 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
           </div>
         </div>
       </section>
-      <div className="grid gap-4 border-t border-black/10 pt-6 sm:grid-cols-3">
-        {(["logo", "heroImage", "heroVideo"] as const).map((key) => {
+      <div className="border-t border-black/10 pt-6">
+        <h3 className="font-display text-3xl font-light">Homepage imagery</h3>
+        <p className="mt-1 text-xs text-black/45">
+          Upload the visual used in each homepage position, then save to publish every change.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {(
+          [
+            "logo",
+            "heroImage",
+            "heroVideo",
+            "visitImage",
+            "galleryWideImage",
+            "galleryDetailImage",
+          ] as const
+        ).map((key) => {
           const media = draft[key];
-          const label = key === "logo" ? "Logo" : key === "heroImage" ? "Hero image" : "Hero video";
+          const labels = {
+            logo: "Logo",
+            heroImage: "Hero image",
+            heroVideo: "Hero video",
+            visitImage: "Visit section image",
+            galleryWideImage: "Gallery banner image",
+            galleryDetailImage: "Gallery detail image",
+          } as const;
+          const label = labels[key];
           const active =
             (key === "heroImage" && draft.heroMediaType === "image") ||
             (key === "heroVideo" && draft.heroMediaType === "video");
@@ -1781,6 +1928,31 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
             sections.
           </p>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {(
+            [
+              ["showHouse", "House"],
+              ["showVisit", "Visit"],
+              ["showCollection", "Collection"],
+              ["showGallery", "Gallery"],
+              ["showCta", "Final CTA"],
+            ] as Array<
+              ["showHouse" | "showVisit" | "showCollection" | "showGallery" | "showCta", string]
+            >
+          ).map(([key, label]) => (
+            <div
+              key={key}
+              className="flex items-center justify-between gap-3 border border-black/12 bg-white/45 p-3"
+            >
+              <span className="text-sm">{label}</span>
+              <Switch
+                checked={draft.home[key]}
+                onCheckedChange={(checked) => homeField(key, checked)}
+                aria-label={`Show ${label} section`}
+              />
+            </div>
+          ))}
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {(
             [
@@ -1794,7 +1966,7 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
               ["galleryBody", "Gallery body", "textarea"],
               ["ctaHeading", "Final CTA heading", "input"],
               ["ctaBody", "Final CTA body", "textarea"],
-            ] as Array<[keyof SiteSettings["home"], string, "input" | "textarea"]>
+            ] as Array<[HomeCopyKey, string, "input" | "textarea"]>
           ).map(([key, label, kind]) => (
             <Field key={key} label={label}>
               {kind === "textarea" ? (
@@ -1943,6 +2115,14 @@ function NumberField({
 }
 const date = (value: string) =>
   new Date(value).toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" });
+const dateTime = (value: string) =>
+  new Date(value).toLocaleString("en-PK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 const split = (value: string) =>
   value
     .split(/[,\n·]+/)
