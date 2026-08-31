@@ -415,6 +415,7 @@ async function main() {
       $set: {
         key: "primary",
         brandName: "SSAROMA",
+        brandDisplayType: "text",
         city: "Peshawar",
         region: "Khyber Pakhtunkhwa",
         address: "First Floor, Shop No. 4, MK Tower, Peshawar, Pakistan",

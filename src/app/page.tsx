@@ -57,7 +57,7 @@ export default async function HomePage() {
   };
   return (
     <div className="bg-offwhite text-ink min-h-screen overflow-clip">
-      <Header brandName={settings.brandName} />
+      <Header settings={settings} />
       <main>
         <Hero settings={settings} />
         {settings.home.showHouse ? <Statement settings={settings} /> : null}

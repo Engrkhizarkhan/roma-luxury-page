@@ -131,6 +131,7 @@ export const returnStatusSchema = z.object({
 
 export const settingsSchema = z.object({
   brandName: trimmed(80),
+  brandDisplayType: z.enum(["text", "logo"]).default("text"),
   city: trimmed(80),
   region: trimmed(100),
   address: trimmed(240),

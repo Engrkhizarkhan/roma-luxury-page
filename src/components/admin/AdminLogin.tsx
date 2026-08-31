@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BrandMark } from "@/components/ssaroma/BrandMark";
+import type { SiteSettings } from "@/types/domain";
 
-export function AdminLogin() {
+export function AdminLogin({ settings }: { settings: SiteSettings }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,7 +36,12 @@ export function AdminLogin() {
   return (
     <main className="bg-[#171713] text-[#f3efe5] grid min-h-screen lg:grid-cols-2">
       <section className="relative hidden overflow-hidden border-r border-white/10 p-12 lg:flex lg:flex-col lg:justify-between">
-        <p className="wordmark text-lg">SSAROMA</p>
+        <BrandMark
+          settings={settings}
+          textClassName="text-lg"
+          logoClassName="h-12 w-auto max-w-64"
+          priority
+        />
         <div>
           <p className="editorial-kicker text-gold">Private operations</p>
           <h1 className="font-display mt-7 max-w-lg text-7xl leading-[.9] font-light">

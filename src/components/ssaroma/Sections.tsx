@@ -9,6 +9,7 @@ import galleryWide from "@/assets/gallery-wide.jpg";
 import { LINKS, MAP_EMBED_URL } from "@/lib/ssaroma";
 import type { ProductItem, SiteSettings } from "@/types/domain";
 import { Reveal, RevealImage } from "./Reveal";
+import { BrandMark } from "./BrandMark";
 
 const HOUSE_PRINCIPLES = [
   ["01", "We listen", "To what you wear, what you avoid and how you want to be remembered."],
@@ -395,12 +396,12 @@ export function Footer({ settings }: { settings: SiteSettings }) {
   return (
     <footer className="bg-ink text-cream pt-20 pb-9 md:pt-28">
       <div className="mx-auto max-w-[1480px] px-5 sm:px-8 lg:px-12">
-        <a
-          href="#top"
-          className="wordmark text-cream block text-[clamp(2.9rem,10.5vw,9.6rem)] leading-none tracking-[0.04em]"
-          aria-label="Back to the top"
-        >
-          {settings.brandName}
+        <a href="#top" className="text-cream block leading-none" aria-label="Back to the top">
+          <BrandMark
+            settings={settings}
+            textClassName="block text-[clamp(2.9rem,10.5vw,9.6rem)] tracking-[0.04em]"
+            logoClassName="h-auto max-h-36 w-auto max-w-[min(82vw,34rem)] md:max-h-48"
+          />
         </a>
 
         <div className="border-cream/16 mt-14 grid gap-10 border-t pt-9 md:grid-cols-12 md:items-end">

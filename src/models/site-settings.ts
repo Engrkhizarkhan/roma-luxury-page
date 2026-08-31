@@ -5,6 +5,7 @@ const SiteSettingsSchema = new Schema(
   {
     key: { type: String, unique: true, default: "primary", immutable: true },
     brandName: { type: String, required: true, trim: true, maxlength: 80 },
+    brandDisplayType: { type: String, enum: ["text", "logo"], default: "text" },
     city: { type: String, required: true, trim: true, maxlength: 80 },
     region: { type: String, required: true, trim: true, maxlength: 100 },
     address: { type: String, required: true, trim: true, maxlength: 240 },

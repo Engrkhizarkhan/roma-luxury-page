@@ -135,6 +135,7 @@ export type ContactRecord = {
 
 export type SiteSettings = {
   brandName: string;
+  brandDisplayType: "text" | "logo";
   city: string;
   region: string;
   address: string;

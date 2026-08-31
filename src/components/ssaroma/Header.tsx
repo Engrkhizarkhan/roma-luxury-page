@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { LINKS, NAV } from "@/lib/ssaroma";
+import type { SiteSettings } from "@/types/domain";
+import { BrandMark } from "./BrandMark";
 
-export function Header({ brandName }: { brandName: string }) {
+export function Header({ settings }: { settings: SiteSettings }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -33,10 +35,16 @@ export function Header({ brandName }: { brandName: string }) {
       <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 sm:px-8 lg:px-12">
         <a
           href="#top"
-          className="text-cream wordmark text-[1.05rem] leading-none"
+          className="text-cream focus-ring flex min-h-9 max-w-40 items-center leading-none sm:max-w-52"
           onClick={() => setOpen(false)}
+          aria-label={`${settings.brandName} home`}
         >
-          {brandName}
+          <BrandMark
+            settings={settings}
+            textClassName="text-[1.05rem]"
+            logoClassName="h-9 w-auto max-w-40 sm:max-w-52"
+            priority
+          />
         </a>
 
         <nav

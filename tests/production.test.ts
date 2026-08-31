@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { BrandMark } from "@/components/ssaroma/BrandMark";
 import { assertJsonRequest, assertSameOrigin } from "@/lib/http";
 import { productSchema, settingsSchema } from "@/validators/admin";
 import { checkoutSchema } from "@/validators/public";
@@ -65,6 +68,40 @@ test("public settings reject executable URL schemes", () => {
     partial.safeParse({ instagramUrl: "https://instagram.com/ssaroma", mapUrl: "" }).success,
     true,
   );
+});
+
+test("brand display defaults to text and accepts logo mode", () => {
+  const brandDisplay = settingsSchema.pick({ brandDisplayType: true });
+  assert.equal(brandDisplay.parse({}).brandDisplayType, "text");
+  assert.equal(brandDisplay.parse({ brandDisplayType: "logo" }).brandDisplayType, "logo");
+  assert.equal(brandDisplay.safeParse({ brandDisplayType: "video" }).success, false);
+});
+
+test("brand mark renders either the editable name or uploaded logo", () => {
+  const logo = {
+    id: "brand-logo",
+    type: "image" as const,
+    url: "/og.png",
+    publicId: "ssaroma/brand-logo",
+    alt: "SSAROMA emblem",
+    width: 480,
+    height: 160,
+  };
+  const textMarkup = renderToStaticMarkup(
+    createElement(BrandMark, {
+      settings: { brandName: "SSAROMA", brandDisplayType: "text", logo },
+    }),
+  );
+  const logoMarkup = renderToStaticMarkup(
+    createElement(BrandMark, {
+      settings: { brandName: "SSAROMA", brandDisplayType: "logo", logo },
+    }),
+  );
+
+  assert.match(textMarkup, />SSAROMA</);
+  assert.doesNotMatch(textMarkup, /<img/);
+  assert.match(logoMarkup, /<img/);
+  assert.match(logoMarkup, /alt="SSAROMA emblem"/);
 });
 
 test("homepage settings default section visibility and require images for image slots", () => {

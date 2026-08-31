@@ -56,6 +56,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatMoney } from "@/lib/catalog";
+import { BrandMark } from "@/components/ssaroma/BrandMark";
 import type {
   MediaItem,
   ContactRecord,
@@ -164,7 +165,7 @@ export function AdminDashboard({
       className={`admin-dashboard bg-[#f1efe9] text-[#171713] min-h-screen lg:grid ${sidebarCollapsed ? "lg:grid-cols-[88px_1fr]" : "lg:grid-cols-[288px_1fr]"}`}
     >
       <aside className="bg-[#171713] text-[#f3efe5] sticky top-0 hidden h-screen min-w-0 flex-col transition-[width] lg:flex">
-        <Brand collapsed={sidebarCollapsed} />
+        <Brand settings={data.settings} collapsed={sidebarCollapsed} />
         <Navigation value={view} setValue={setView} data={data} collapsed={sidebarCollapsed} />
         <div className="mt-auto border-t border-white/10 p-4">
           <button
@@ -216,7 +217,7 @@ export function AdminDashboard({
         </header>
         <Sheet open={mobile} onOpenChange={setMobile}>
           <SheetContent side="left" className="bg-[#171713] text-white border-white/10 p-0">
-            <Brand />
+            <Brand settings={data.settings} />
             <Navigation
               value={view}
               data={data}
@@ -289,10 +290,18 @@ export function AdminDashboard({
   );
 }
 
-function Brand({ collapsed = false }: { collapsed?: boolean }) {
+function Brand({ settings, collapsed = false }: { settings: SiteSettings; collapsed?: boolean }) {
   return (
     <div className={`border-b border-white/10 py-6 ${collapsed ? "px-3 text-center" : "px-7"}`}>
-      <p className="wordmark text-sm">{collapsed ? "SSA" : "SSAROMA"}</p>
+      <div
+        className={`flex min-h-6 items-center ${collapsed ? "justify-center" : "justify-start"}`}
+      >
+        <BrandMark
+          settings={settings}
+          textClassName="text-sm"
+          logoClassName={collapsed ? "h-7 w-auto max-w-12" : "h-8 w-auto max-w-44"}
+        />
+      </div>
       {!collapsed ? (
         <p className="mt-2 text-xs tracking-[.12em] text-white/45 uppercase">Store operations</p>
       ) : null}
@@ -1751,6 +1760,7 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
       setDraft((current) => ({
         ...current,
         [key]: result.media,
+        ...(key === "logo" ? { brandDisplayType: "logo" as const } : {}),
         ...(key === "heroImage"
           ? { heroMediaType: "image" as const }
           : key === "heroVideo"
@@ -1770,6 +1780,39 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
   };
   return (
     <form onSubmit={save} className="border border-black/10 bg-white/45 p-5 space-y-7">
+      <section className="grid gap-5 md:grid-cols-[1fr_1.35fr] md:items-stretch">
+        <div className="bg-[#171713] text-[#f3efe5] flex min-h-32 items-center justify-center border border-black/10 p-7">
+          <BrandMark
+            settings={draft}
+            textClassName="text-xl"
+            logoClassName="h-16 w-auto max-w-full"
+          />
+        </div>
+        <div className="border border-black/12 bg-white/45 p-5">
+          <p className="text-sm font-medium">Brand shown across the storefront</p>
+          <p className="mt-1 text-xs leading-5 text-black/45">
+            Switch between the editable text name and the uploaded logo. Uploading a new logo
+            selects logo mode automatically.
+          </p>
+          <div className="mt-5 flex items-center gap-3">
+            <span className={draft.brandDisplayType === "text" ? "font-semibold" : "text-black/45"}>
+              Plain text
+            </span>
+            <Switch
+              checked={draft.brandDisplayType === "logo"}
+              disabled={!draft.logo}
+              onCheckedChange={(checked) => field("brandDisplayType", checked ? "logo" : "text")}
+              aria-label="Use uploaded logo instead of plain brand text"
+            />
+            <span className={draft.brandDisplayType === "logo" ? "font-semibold" : "text-black/45"}>
+              Logo image
+            </span>
+          </div>
+          {!draft.logo ? (
+            <p className="mt-3 text-xs text-black/45">Upload a logo below to enable logo mode.</p>
+          ) : null}
+        </div>
+      </section>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Brand name">
           <Input value={draft.brandName} onChange={(e) => field("brandName", e.target.value)} />
@@ -1878,6 +1921,7 @@ function Settings({ value, update }: { value: SiteSettings; update: (v: SiteSett
           } as const;
           const label = labels[key];
           const active =
+            (key === "logo" && draft.brandDisplayType === "logo") ||
             (key === "heroImage" && draft.heroMediaType === "image") ||
             (key === "heroVideo" && draft.heroMediaType === "video");
           return (

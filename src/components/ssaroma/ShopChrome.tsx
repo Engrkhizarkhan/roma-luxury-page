@@ -16,6 +16,7 @@ import {
 import { CART_EVENT, clearCart, readCart, updateCartLine, type CartLine } from "@/lib/cart";
 import { formatMoney, type ProductItem } from "@/lib/catalog";
 import type { SiteSettings } from "@/types/domain";
+import { BrandMark } from "./BrandMark";
 
 type ShellProps = {
   children: ReactNode;
@@ -88,8 +89,12 @@ export function ShopShell({ children, products, settings }: ShellProps) {
             </SheetTrigger>
             <SheetContent side="left" className="bg-ink text-cream border-cream/15 w-[88%] p-0">
               <SheetHeader className="border-cream/12 border-b px-6 py-6 text-left">
-                <SheetTitle className="wordmark text-cream text-base">
-                  {settings.brandName}
+                <SheetTitle className="text-cream flex min-h-8 items-center">
+                  <BrandMark
+                    settings={settings}
+                    textClassName="text-base"
+                    logoClassName="h-8 w-auto max-w-44"
+                  />
                 </SheetTitle>
                 <SheetDescription className="text-cream/48 text-xs">
                   Fragrance house · Peshawar
@@ -115,9 +120,15 @@ export function ShopShell({ children, products, settings }: ShellProps) {
 
           <Link
             href="/"
-            className="wordmark text-cream focus-ring justify-self-center text-[0.98rem] leading-none sm:text-[1.05rem]"
+            className="text-cream focus-ring flex min-h-10 max-w-36 items-center justify-self-center leading-none sm:max-w-48"
+            aria-label={`${settings.brandName} home`}
           >
-            {settings.brandName}
+            <BrandMark
+              settings={settings}
+              textClassName="text-[0.98rem] sm:text-[1.05rem]"
+              logoClassName="h-9 w-auto max-w-36 sm:max-w-48"
+              priority
+            />
           </Link>
 
           <div className="flex items-center justify-self-end gap-4 sm:gap-5">
@@ -287,7 +298,11 @@ export function ShopShell({ children, products, settings }: ShellProps) {
       <footer className="bg-ink text-cream mt-24 border-t border-white/10 py-12">
         <div className="mx-auto grid max-w-370 gap-10 px-5 sm:px-8 md:grid-cols-[1.3fr_1fr_1fr] lg:px-12">
           <div>
-            <p className="wordmark text-[0.95rem]">{settings.brandName}</p>
+            <BrandMark
+              settings={settings}
+              textClassName="text-[0.95rem]"
+              logoClassName="h-10 w-auto max-w-48"
+            />
             <p className="text-cream/48 mt-4 max-w-sm text-sm leading-7">
               An intimate fragrance house for considered signatures and unhurried discovery.
             </p>

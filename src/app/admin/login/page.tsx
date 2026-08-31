@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { getAdminSession } from "@/lib/auth";
+import { getSiteSettings } from "@/services/settings";
 
 export const metadata: Metadata = {
   title: "Administrator sign in",
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export default async function LoginPage() {
   if (await getAdminSession()) redirect("/admin");
-  return <AdminLogin />;
+  return <AdminLogin settings={await getSiteSettings()} />;
 }

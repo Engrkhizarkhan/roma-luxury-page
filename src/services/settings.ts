@@ -7,6 +7,7 @@ import { serializeMedia } from "@/services/catalog";
 
 export const initialSettings: SiteSettings = {
   brandName: "SSAROMA",
+  brandDisplayType: "text",
   city: "Peshawar",
   region: "Khyber Pakhtunkhwa",
   address: "First Floor, Shop No. 4, MK Tower, Peshawar, Pakistan",
@@ -60,6 +61,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   ).lean();
   return {
     brandName: value.brandName,
+    brandDisplayType: value.brandDisplayType === "logo" ? "logo" : "text",
     city: value.city,
     region: value.region,
     address: value.address,
